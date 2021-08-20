@@ -1,0 +1,13 @@
+# This file contains values from Cookiecutter
+
+default_context:
+  project_name: "pwpush"
+  project_description: "Command Line Interface to Password Pusher."
+  organization: "pwpush"
+  license: "MIT"
+  minimal_python_version: 3.7
+  github_name: "pglombardo"
+  email: "pglombardo@hey.com"
+  version: "0.1.0"
+  line_length: "88"
+  create_example_template: "cli"
