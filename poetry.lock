@@ -217,7 +217,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "importlib-metadata"
-version = "4.10.0"
+version = "4.11.0"
 description = "Read metadata from Python packages"
 category = "main"
 optional = false
@@ -764,8 +764,8 @@ idna = [
     {file = "idna-3.3.tar.gz", hash = "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"},
 ]
 importlib-metadata = [
-    {file = "importlib_metadata-4.10.0-py3-none-any.whl", hash = "sha256:b7cf7d3fef75f1e4c80a96ca660efbd51473d7e8f39b5ab9210febc7809012a4"},
-    {file = "importlib_metadata-4.10.0.tar.gz", hash = "sha256:92a8b58ce734b2a4494878e0ecf7d79ccd7a128b5fc6014c401e0b61f006f0f6"},
+    {file = "importlib_metadata-4.11.0-py3-none-any.whl", hash = "sha256:6affcdb3aec542dd98df8211e730bba6c5f2bec8288d47bacacde898f548c9ad"},
+    {file = "importlib_metadata-4.11.0.tar.gz", hash = "sha256:9e5e553bbba1843cb4a00823014b907616be46ee503d2b9ba001d214a8da218f"},
 ]
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
