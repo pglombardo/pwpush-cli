@@ -13,6 +13,8 @@
 [![License](https://img.shields.io/github/license/pglombardo/pwpush-cli)](https://github.com/pglombardo/pwpush/blob/master/LICENSE)
 
 Command Line Interface to Password Pusher.
+  
+<strong>This utility isn't fully implemented yet and non-functional. Star the repo for updates.</strong>
 
 </div>
 
