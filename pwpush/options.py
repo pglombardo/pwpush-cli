@@ -42,13 +42,14 @@ def load_config():
         validate_user_config()
     else:
         # No config file exists; Write out a new file with default settings
+        user_config.read_dict(default_config)
 
         # Write out default settings to a new config file
         if os.path.exists(user_config_dir) is False:
             Path.mkdir(user_config_dir)
 
         with open(user_config_file, "x") as file:
-            default_config.write(file)
+            user_config.write(file)
 
 
 def validate_user_config():
