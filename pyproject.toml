@@ -53,7 +53,7 @@ pre-commit = "^2.13.0"
 pydocstyle = "^6.1.1"
 pylint = "^2.9.6"
 pytest = "^7.2.0"
-pyupgrade = "^2.23.1"
+pyupgrade = "^3.2.2"
 safety = "^2.3.1"
 ipdb = "^0.13.9"
 
