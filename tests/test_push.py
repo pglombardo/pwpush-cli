@@ -10,9 +10,7 @@ runner = CliRunner()
 def test_basic_push():
     result = runner.invoke(app, ["push", "mypassword"])
     assert result.exit_code == 0
-    assert "Instance Settings" in result.stdout
-    assert "Expiration Settings" in result.stdout
-    assert "CLI Settings" in result.stdout
+    assert "https://pwpush.com/en/p/" in result.stdout
 
 
 def test_config_show_in_json():
