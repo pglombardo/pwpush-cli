@@ -55,7 +55,7 @@ pylint = "^2.9.6"
 pytest = "^7.2.2"
 pyupgrade = "^3.3.1"
 safety = "^2.3.5"
-ipdb = "^0.13.11"
+ipdb = "^0.13.13"
 
 [tool.black]
 # https://github.com/psf/black
