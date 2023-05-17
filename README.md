@@ -133,16 +133,16 @@ User config is saved in '/Users/pglombardo/Library/Application Support/pwpush/co
 
 ## Help
 
-![](https://disznc.s3.amazonaws.com/pwpush-cli-help.png)
+![](https://pwpush.fra1.cdn.digitaloceanspaces.com/cli/pwpush-cli-help.png)
 
 ## List
 
-![](https://disznc.s3.amazonaws.com/pwpush-cli-list.png)
+![](https://pwpush.fra1.cdn.digitaloceanspaces.com/cli/pwpush-cli-list.png)
 
 ## Audit
 
-![](https://disznc.s3.amazonaws.com/pwpush-cli-audit.png)
+![](https://pwpush.fra1.cdn.digitaloceanspaces.com/cli/pwpush-cli-audit.png)
 
 ## Config
 
-![](https://disznc.s3.amazonaws.com/pwpush-cli-config.png)
+![](https://pwpush.fra1.cdn.digitaloceanspaces.com/cli/pwpush-cli-config.png)
