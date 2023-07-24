@@ -80,7 +80,7 @@ def login(
     Your email and API token is required.
     Your API token is available at https://pwpush.com/en/users/token.
     """
-    r = requests.get(url + "/en/d/active", auth=(email, token))
+    r = requests.get(url + "/en/d/active", auth=(email, token), timeout=5)
 
     if r.status_code == 200:
         user_config["instance"]["url"] = url
@@ -355,17 +355,19 @@ def make_request(method, path, post_data=None):
     if method == "GET":
         if debug:
             rprint(f"Making GET request to {url + path} with headers {auth_headers}")
-        return requests.get(url + path, headers=auth_headers)
+        return requests.get(url + path, headers=auth_headers, timeout=5)
     elif method == "POST":
         if debug:
             rprint(
                 f"Making JSON POST request to {url + path} with headers {auth_headers} and body {post_data}"
             )
-        return requests.post(url + path, headers=auth_headers, json=post_data)
+        return requests.post(
+            url + path, headers=auth_headers, json=post_data, timeout=5
+        )
     elif method == "DELETE":
         if debug:
             rprint(f"Making DELETE request to {url + path} with headers {auth_headers}")
-        return requests.delete(url + path, headers=auth_headers)
+        return requests.delete(url + path, headers=auth_headers, timeout=5)
 
 
 def json_output() -> Boolean:
