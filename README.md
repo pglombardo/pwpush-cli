@@ -28,7 +28,7 @@ It uses the JSON API of Password Pusher to create, view, retrieve and manage pus
 
 `pip install pwpush`
 
-* Required Python version >3.5
+* Required Python version >3.8
 
 # Quickstart
 
