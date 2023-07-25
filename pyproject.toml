@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "pwpush"
-version = "0.9.1"
+version = "0.9.3"
 description = "Command Line Interface to Password Pusher."
 readme = "README.md"
 authors = ["pwpush <pglombardo@hey.com>"]
