@@ -371,25 +371,25 @@ def make_request(method, path, post_data=None):
 
 
 def json_output() -> Boolean:
-    if cli_options["json"] == True or user_config["cli"]["json"] is True:
+    if cli_options["json"] == True or user_config["cli"]["json"].lower() in ["true", "yes", "on"]:
         return True
     return False
 
 
 def verbose_output() -> Boolean:
-    if cli_options["verbose"] == True or user_config["cli"]["verbose"] is True:
+    if cli_options["verbose"] == True or user_config["cli"]["verbose"].lower() in ["true", "yes", "on"]:
         return True
     return False
 
 
 def debug_output() -> Boolean:
-    if cli_options["debug"] == True or user_config["cli"]["debug"] is True:
+    if cli_options["debug"] == True or user_config["cli"]["debug"].lower() in ["true", "yes", "on"]:
         return True
     return False
 
 
 def pretty_output() -> Boolean:
-    if cli_options["pretty"] == True or user_config["cli"]["pretty"] is True:
+    if cli_options["pretty"] == True or user_config["cli"]["debug"].lower() in ["true", "yes", "on"]:
         return True
     return False
 
