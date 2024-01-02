@@ -126,7 +126,6 @@ def push(
         help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..  Requires login.",
     ),
     # prompt: bool = typer.Option(False, help="Prompt to enter payload interactively via the CLI."),
-    # file: str = typer.Option('', help="Specify a text file that contains the payload.  Note: 1MB max."),
     payload: str = typer.Argument(
         "",
     ),
@@ -172,6 +171,83 @@ def push(
     if response.status_code == 201:
         body = response.json()
         path = "/p/%s/preview.json" % body["url_token"]
+        response = make_request("GET", path)
+
+        body = response.json()
+        if json_output():
+            print(body)
+        else:
+            rprint(body["url"])
+    else:
+        rprint("Error:")
+        rprint(response.status_code)
+        rprint(response.text)
+
+
+@app.command(name="push-file")
+def pushFile(
+    days: int = typer.Option(None, help="Expire after this many days."),
+    views: int = typer.Option(None, help="Expire after this many views."),
+    deletable: bool = typer.Option(
+        None, help="Allow users to delete passwords once retrieved."
+    ),
+    retrieval_step: bool = typer.Option(
+        None,
+        help="1-click retrieval step: Helps to avoid chat systems and URL scanners from eating up views.",
+    ),
+    note: str = typer.Option(
+        None,
+        help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..  Requires login.",
+    ),
+    payload: str = typer.Argument(
+        "",
+    ),
+) -> None:
+    """
+    Push a new file.
+    """
+    path = "/f.json"
+
+    data = {}
+    data["file_push"] = {}
+    data["file_push"]["payload"] = ""
+
+    # Option and user preference processing
+    if days:
+        data["file_push"]["expire_after_days"] = days
+    elif user_config["expiration"]["expire_after_days"] != "Not Set":
+        data["file_push"]["expire_after_days"] = user_config["expiration"][
+            "expire_after_days"
+        ]
+
+    if views:
+        data["file_push"]["expire_after_views"] = views
+    elif user_config["expiration"]["expire_after_views"] != "Not Set":
+        data["file_push"]["expire_after_views"] = user_config["expiration"][
+            "expire_after_views"
+        ]
+
+    if deletable:
+        data["file_push"]["deletable_by_viewer"] = views
+    elif user_config["expiration"]["deletable_by_viewer"] != "Not Set":
+        data["file_push"]["deletable_by_viewer"] = user_config["expiration"][
+            "deletable_by_viewer"
+        ]
+
+    if retrieval_step:
+        data["file_push"]["retrieval_step"] = views
+    elif user_config["expiration"]["retrieval_step"] != "Not Set":
+        data["file_push"]["retrieval_step"] = user_config["expiration"][
+            "retrieval_step"
+        ]
+
+    with open(payload, "rb") as fd:
+        upload_files = {"file_push[files][]": fd}
+        response = make_request("POST", path, upload_files=upload_files, post_data=data)
+
+    if response.status_code == 201:
+        body = response.json()
+        path = "/f/%s/preview.json" % body["url_token"]
         response = make_request("GET", path)
 
         body = response.json()
@@ -333,7 +409,7 @@ def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) 
         rprint(r.text)
 
 
-def make_request(method, path, post_data=None):
+def make_request(method, path, post_data=None, upload_files=None):
     debug = debug_output()
 
     url = user_config["instance"]["url"]
@@ -359,10 +435,16 @@ def make_request(method, path, post_data=None):
     elif method == "POST":
         if debug:
             rprint(
-                f"Making JSON POST request to {url + path} with headers {auth_headers} and body {post_data}"
+                f"Making JSON POST request to {url + path} with headers {auth_headers} body {post_data}"
             )
+            if upload_files is not None:
+                rprint(f"Attaching a file to the upload")
         return requests.post(
-            url + path, headers=auth_headers, json=post_data, timeout=5
+            url + path,
+            headers=auth_headers,
+            json=post_data,
+            timeout=5,
+            files=upload_files,
         )
     elif method == "DELETE":
         if debug:
@@ -371,25 +453,29 @@ def make_request(method, path, post_data=None):
 
 
 def json_output() -> Boolean:
-    if cli_options["json"] == True or user_config["cli"]["json"].lower() in ["true", "yes", "on"]:
+    user_config_json = user_config["cli"]["json"].lower() in ["true", "yes", "on"]
+    if cli_options["json"] == True or user_config_json:
         return True
     return False
 
 
 def verbose_output() -> Boolean:
-    if cli_options["verbose"] == True or user_config["cli"]["verbose"].lower() in ["true", "yes", "on"]:
+    user_config_verbose = user_config["cli"]["verbose"].lower() in ["true", "yes", "on"]
+    if cli_options["verbose"] == True or user_config_verbose:
         return True
     return False
 
 
 def debug_output() -> Boolean:
-    if cli_options["debug"] == True or user_config["cli"]["debug"].lower() in ["true", "yes", "on"]:
+    user_config_debug = user_config["cli"]["debug"].lower() in ["true", "yes", "on"]
+    if cli_options["debug"] == True or user_config_debug:
         return True
     return False
 
 
 def pretty_output() -> Boolean:
-    if cli_options["pretty"] == True or user_config["cli"]["debug"].lower() in ["true", "yes", "on"]:
+    user_config_pretty = user_config["cli"]["debug"].lower() in ["true", "yes", "on"]
+    if cli_options["pretty"] == True or user_config_pretty:
         return True
     return False
 
