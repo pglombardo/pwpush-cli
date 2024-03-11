@@ -48,7 +48,7 @@ shellingham = "^1.5.0"
 python-dateutil = "^2.8.2"
 
 [tool.poetry.dev-dependencies]
-bandit = "^1.7.0"
+bandit = "^1.7.8"
 black = {version = ">=22.6.0", allow-prereleases = true}
 darglint = "^1.8.0"
 isort = {extras = ["colors"], version = "^5.13.2"}
