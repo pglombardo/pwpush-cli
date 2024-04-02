@@ -26,3 +26,24 @@ template: |
   ## :busts_in_silhouette: List of contributors
 
   $CONTRIBUTORS
+
+  ## :snake: PyPi Package
+
+  Available on PyPi:
+  https://pypi.org/project/pwpush/
+
+  ## :running_man: Run This Version
+
+  ```bash
+  pip install pwpush==$NEXT_PATCH_VERSION
+  ```
+
+  ## :link: Useful Links
+
+  * [Quick Start](https://github.com/pglombardo/pwpush-cli?tab=readme-ov-file#quickstart) Documentation
+  * [Passowrd Pusher REST API](https://pwpush.com/api) Documentation
+  * [Docker Hub](https://hub.docker.com/r/pglombardo/pwpush)
+  * [GitHub](https://github.com/pglombardo/pwpush-cli)
+  * [Website](https://pwpush.com)
+  * [Twitter](https://twitter.com/pwpush)
+  * [Newsletter](https://buttondown.email/pwpush)
