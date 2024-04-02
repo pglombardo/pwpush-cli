@@ -433,22 +433,22 @@ def make_request(method, path, post_data=None, upload_files=None):
         return requests.delete(url + path, headers=auth_headers, timeout=5)
 
 
-def json_output() -> Boolean:
+def json_output() -> bool:
     user_config_json = user_config["cli"]["json"].lower() in ["true", "yes", "on"]
     return cli_options["json"] == True or user_config_json
 
 
-def verbose_output() -> Boolean:
+def verbose_output() -> bool:
     user_config_verbose = user_config["cli"]["verbose"].lower() in ["true", "yes", "on"]
     return cli_options["verbose"] == True or user_config_verbose
 
 
-def debug_output() -> Boolean:
+def debug_output() -> bool:
     user_config_debug = user_config["cli"]["debug"].lower() in ["true", "yes", "on"]
     return cli_options["debug"] == True or user_config_debug
 
 
-def pretty_output() -> Boolean:
+def pretty_output() -> bool:
     user_config_pretty = user_config["cli"]["debug"].lower() in ["true", "yes", "on"]
     return cli_options["pretty"] == True or user_config_pretty
 
