@@ -8,28 +8,24 @@ user_config = configparser.ConfigParser()
 user_config_dir = Path(typer.get_app_dir("pwpush"))
 user_config_file = user_config_dir.joinpath("config.ini")
 
-cli_options = {}
-cli_options["json"] = False
-cli_options["verbose"] = False
-cli_options["debug"] = False
-
-default_config = {}
-default_config["instance"] = {}
+cli_options = {"json": False, "verbose": False, "debug": False}
+default_config = {"instance": {}}
 default_config["instance"]["url"] = "https://pwpush.com"
 default_config["instance"]["email"] = "Not Set"
 default_config["instance"]["token"] = "Not Set"
 
-default_config["expiration"] = {}
-default_config["expiration"]["expire_after_days"] = "Not Set"
-default_config["expiration"]["expire_after_views"] = "Not Set"
-default_config["expiration"]["retrieval_step"] = "Not Set"
-default_config["expiration"]["deletable_by_viewer"] = "Not Set"
-
-default_config["cli"] = {}
-default_config["cli"]["json"] = "False"
-default_config["cli"]["verbose"] = "False"
-default_config["cli"]["pretty"] = "False"
-default_config["cli"]["debug"] = "False"
+default_config["expiration"] = {
+    "expire_after_days": "Not Set",
+    "expire_after_views": "Not Set",
+    "retrieval_step": "Not Set",
+    "deletable_by_viewer": "Not Set",
+}
+default_config["cli"] = {
+    "json": "False",
+    "verbose": "False",
+    "pretty": "False",
+    "debug": "False",
+}
 
 
 def load_config():
@@ -88,27 +84,21 @@ def json_output() -> bool:
     """
     Determines whether we should output in json.
     """
-    if cli_options["json"] == True or user_config["cli"]["json"] is True:
-        return True
-    return False
+    return cli_options["json"] == True or user_config["cli"]["json"] is True
 
 
 def verbose_output() -> bool:
     """
     Determines whether we should provide verbose output.
     """
-    if cli_options["verbose"] == True or user_config["cli"]["verbose"] is True:
-        return True
-    return False
+    return cli_options["verbose"] == True or user_config["cli"]["verbose"] is True
 
 
 def debug_output() -> bool:
     """
     Determines whether we should provide debug output.
     """
-    if cli_options["debug"] == True or user_config["cli"]["debug"] is True:
-        return True
-    return False
+    return cli_options["debug"] == True or user_config["cli"]["debug"] is True
 
 
 load_config()

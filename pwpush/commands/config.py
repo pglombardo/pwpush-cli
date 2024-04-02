@@ -118,7 +118,6 @@ def set(
     Set a configuration value
     """
     key = key.lower()
-    value = value.lower() in ["true", "yes", "on"]
 
     found = False
     for section in user_config.sections():

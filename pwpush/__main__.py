@@ -1,12 +1,5 @@
 # type: ignore[attr-defined]
-from typing import Optional
-
-import json
 from enum import Enum
-from pydoc import cli
-from random import choice
-from secrets import token_urlsafe
-from xmlrpc.client import Boolean
 
 import requests
 import typer
@@ -63,9 +56,9 @@ def load_cli_options(
 ) -> None:
     # CLI Args override configuration
     cli_options["json"] = json.lower() in ["true", "yes", "on"]
-    cli_options["verbose"] = verbose.lower() in ["true", "yes", "on"]
-    cli_options["debug"] = debug.lower() in ["true", "yes", "on"]
-    cli_options["pretty"] = pretty.lower() in ["true", "yes", "on"]
+    cli_options["verbose"] = verbose.lower() in {"true", "yes", "on"}
+    cli_options["debug"] = debug.lower() in {"true", "yes", "on"}
+    cli_options["pretty"] = pretty.lower() in {"true", "yes", "on"}
 
 
 @app.command()
@@ -80,7 +73,7 @@ def login(
     Your email and API token is required.
     Your API token is available at https://pwpush.com/en/users/token.
     """
-    r = requests.get(url + "/en/d/active", auth=(email, token), timeout=5)
+    r = requests.get(f"{url}/en/d/active", auth=(email, token), timeout=5)
 
     if r.status_code == 200:
         user_config["instance"]["url"] = url
@@ -102,8 +95,7 @@ def logout() -> None:
     rprint(
         "This will log you out from this command line tool and remove local credentials."
     )
-    confirmation = typer.prompt("Are you sure? [y/n]")
-    if confirmation:
+    if confirmation := typer.prompt("Are you sure? [y/n]"):
         user_config["instance"]["email"] = "Not Set"
         user_config["instance"]["token"] = "Not Set"
         save_config()
@@ -126,7 +118,6 @@ def push(
         help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..  Requires login.",
     ),
     # prompt: bool = typer.Option(False, help="Prompt to enter payload interactively via the CLI."),
-    # file: str = typer.Option('', help="Specify a text file that contains the payload.  Note: 1MB max."),
     payload: str = typer.Argument(
         "",
     ),
@@ -136,8 +127,7 @@ def push(
     """
     path = "/p.json"
 
-    data = {}
-    data["password"] = {}
+    data = {"password": {}}
     data["password"]["payload"] = payload
 
     # Option and user preference processing
@@ -171,7 +161,83 @@ def push(
 
     if response.status_code == 201:
         body = response.json()
-        path = "/p/%s/preview.json" % body["url_token"]
+        path = f'/p/{body["url_token"]}/preview.json'
+        response = make_request("GET", path)
+
+        body = response.json()
+        if json_output():
+            print(body)
+        else:
+            rprint(body["url"])
+    else:
+        rprint("Error:")
+        rprint(response.status_code)
+        rprint(response.text)
+
+
+@app.command(name="push-file")
+def pushFile(
+    days: int = typer.Option(None, help="Expire after this many days."),
+    views: int = typer.Option(None, help="Expire after this many views."),
+    deletable: bool = typer.Option(
+        None, help="Allow users to delete passwords once retrieved."
+    ),
+    retrieval_step: bool = typer.Option(
+        None,
+        help="1-click retrieval step: Helps to avoid chat systems and URL scanners from eating up views.",
+    ),
+    note: str = typer.Option(
+        None,
+        help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..  Requires login.",
+    ),
+    payload: str = typer.Argument(
+        "",
+    ),
+) -> None:
+    """
+    Push a new file.
+    """
+    path = "/f.json"
+
+    data = {"file_push": {}}
+    data["file_push"]["payload"] = ""
+
+    # Option and user preference processing
+    if days:
+        data["file_push"]["expire_after_days"] = days
+    elif user_config["expiration"]["expire_after_days"] != "Not Set":
+        data["file_push"]["expire_after_days"] = user_config["expiration"][
+            "expire_after_days"
+        ]
+
+    if views:
+        data["file_push"]["expire_after_views"] = views
+    elif user_config["expiration"]["expire_after_views"] != "Not Set":
+        data["file_push"]["expire_after_views"] = user_config["expiration"][
+            "expire_after_views"
+        ]
+
+    if deletable:
+        data["file_push"]["deletable_by_viewer"] = views
+    elif user_config["expiration"]["deletable_by_viewer"] != "Not Set":
+        data["file_push"]["deletable_by_viewer"] = user_config["expiration"][
+            "deletable_by_viewer"
+        ]
+
+    if retrieval_step:
+        data["file_push"]["retrieval_step"] = views
+    elif user_config["expiration"]["retrieval_step"] != "Not Set":
+        data["file_push"]["retrieval_step"] = user_config["expiration"][
+            "retrieval_step"
+        ]
+
+    with open(payload, "rb") as fd:
+        upload_files = {"file_push[files][]": fd}
+        response = make_request("POST", path, upload_files=upload_files, post_data=data)
+
+    if response.status_code == 201:
+        body = response.json()
+        path = f'/f/{body["url_token"]}/preview.json'
         response = make_request("GET", path)
 
         body = response.json()
@@ -278,10 +344,7 @@ def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) 
         rprint("You must log into an instance first.")
         raise typer.Exit(1)
 
-    path = "/en/d/active.json"
-    if expired:
-        path = "/en/d/expired.json"
-
+    path = "/en/d/expired.json" if expired else "/en/d/active.json"
     r = make_request("GET", path)
 
     if r.status_code == 200:
@@ -313,18 +376,12 @@ def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) 
 
                 table.add_row(
                     push["url_token"],
-                    "%s" % push["note"],
-                    "{}/{}".format(
-                        push["expire_after_views"] - push["views_remaining"],
-                        push["expire_after_views"],
-                    ),
-                    "{}/{}".format(
-                        push["expire_after_days"] - push["days_remaining"],
-                        push["expire_after_days"],
-                    ),
-                    "%s" % push["deletable_by_viewer"],
-                    "%s" % push["retrieval_step"],
-                    "%s" % push["created_at"],
+                    f'{push["note"]}',
+                    f'{push["expire_after_views"] - push["views_remaining"]}/{push["expire_after_views"]}',
+                    f'{push["expire_after_days"] - push["days_remaining"]}/{push["expire_after_days"]}',
+                    f'{push["deletable_by_viewer"]}',
+                    f'{push["retrieval_step"]}',
+                    f'{push["created_at"]}',
                 )
 
             console.print(table)
@@ -333,7 +390,7 @@ def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) 
         rprint(r.text)
 
 
-def make_request(method, path, post_data=None):
+def make_request(method, path, post_data=None, upload_files=None):
     debug = debug_output()
 
     url = user_config["instance"]["url"]
@@ -359,10 +416,16 @@ def make_request(method, path, post_data=None):
     elif method == "POST":
         if debug:
             rprint(
-                f"Making JSON POST request to {url + path} with headers {auth_headers} and body {post_data}"
+                f"Making JSON POST request to {url + path} with headers {auth_headers} body {post_data}"
             )
+            if upload_files is not None:
+                rprint("Attaching a file to the upload")
         return requests.post(
-            url + path, headers=auth_headers, json=post_data, timeout=5
+            url + path,
+            headers=auth_headers,
+            json=post_data,
+            timeout=5,
+            files=upload_files,
         )
     elif method == "DELETE":
         if debug:
@@ -370,28 +433,24 @@ def make_request(method, path, post_data=None):
         return requests.delete(url + path, headers=auth_headers, timeout=5)
 
 
-def json_output() -> Boolean:
-    if cli_options["json"] == True or user_config["cli"]["json"] is True:
-        return True
-    return False
+def json_output() -> bool:
+    user_config_json = user_config["cli"]["json"].lower() in ["true", "yes", "on"]
+    return cli_options["json"] == True or user_config_json
 
 
-def verbose_output() -> Boolean:
-    if cli_options["verbose"] == True or user_config["cli"]["verbose"] is True:
-        return True
-    return False
+def verbose_output() -> bool:
+    user_config_verbose = user_config["cli"]["verbose"].lower() in ["true", "yes", "on"]
+    return cli_options["verbose"] == True or user_config_verbose
 
 
-def debug_output() -> Boolean:
-    if cli_options["debug"] == True or user_config["cli"]["debug"] is True:
-        return True
-    return False
+def debug_output() -> bool:
+    user_config_debug = user_config["cli"]["debug"].lower() in ["true", "yes", "on"]
+    return cli_options["debug"] == True or user_config_debug
 
 
-def pretty_output() -> Boolean:
-    if cli_options["pretty"] == True or user_config["cli"]["pretty"] is True:
-        return True
-    return False
+def pretty_output() -> bool:
+    user_config_pretty = user_config["cli"]["debug"].lower() in ["true", "yes", "on"]
+    return cli_options["pretty"] == True or user_config_pretty
 
 
 app.add_typer(config.app, name="config", help="Show & modify CLI configuration.")

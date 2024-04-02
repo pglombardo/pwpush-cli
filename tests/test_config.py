@@ -22,13 +22,20 @@ def test_config_show_in_json():
 
 
 def test_config_set():
-    result = runner.invoke(app, ["config", "set", "--key", "json", "--value", "on"])
+    result = runner.invoke(app, ["config", "set", "--key", "json", "--value", "True"])
+    assert "Success" in result.stdout
+    assert result.exit_code == 0
+
+    result = runner.invoke(
+        app, ["config", "set", "--key", "url", "--value", "https://pwpush.test"]
+    )
     assert "Success" in result.stdout
     assert result.exit_code == 0
 
     result = runner.invoke(app, ["--json", "on", "config", "show"])
     config = json.loads(result.stdout.strip())
     assert config["cli"]["json"] == "True"
+    assert config["instance"]["url"] == "https://pwpush.test"
 
 
 def test_config_unset():
