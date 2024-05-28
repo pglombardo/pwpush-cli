@@ -121,9 +121,7 @@ def push(
     payload: str = typer.Argument(
         "",
     ),
-    passphrase: str = typer.Argument(
-        "",
-    ),
+    passphrase: str = typer.Option(None, help="Add a passphrase to access the secret"),
 ) -> None:
     """
     Push a new password, secret note or text.
@@ -161,7 +159,7 @@ def push(
         data["password"]["retrieval_step"] = user_config["expiration"]["retrieval_step"]
 
     if passphrase:
-        data["passphrase"] = passphase
+        data["password"]["passphrase"] = passphrase
 
     response = make_request("POST", path, post_data=data)
 
