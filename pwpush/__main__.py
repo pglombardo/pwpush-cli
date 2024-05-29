@@ -1,5 +1,8 @@
 # type: ignore[attr-defined]
 from enum import Enum
+import getpass
+import secrets
+import string
 
 import requests
 import typer
@@ -7,13 +10,12 @@ from dateutil import parser
 from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from pwpush import version
 from pwpush.commands import config
 from pwpush.commands.config import save_config, user_config
 from pwpush.options import cli_options
-
-console = Console()
 
 
 class Color(str, Enum):
@@ -24,7 +26,6 @@ class Color(str, Enum):
     yellow = "yellow"
     green = "green"
 
-
 app = typer.Typer(
     name="pwpush",
     help="Command Line Interface to Password Pusher.",
@@ -34,6 +35,32 @@ app = typer.Typer(
     context_settings=dict(help_option_names=["-h", "--help"]),
 )
 console = Console()
+
+
+def genpass(length=5):
+    """Generate a passphrase"""
+    from xkcdpass.xkcd_password import generate_xkcdpassword, generate_wordlist
+
+    wordlist = generate_wordlist(
+        wordfile=None, min_length=5, max_length=9, valid_chars="[a-zA-Z1-9]"
+    )
+    pw = generate_xkcdpassword(
+        wordlist,
+        interactive=False,
+        numwords=length,
+        acrostic=False,
+        delimiter=" ",
+        random_delimiters=True,
+        case="random",
+    )
+    return pw
+
+
+def generate_password(length=50):
+    """Generate a secure random password"""
+    characters = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(secrets.choice(characters) for _ in range(length))
+    return password
 
 
 def version_callback(print_version: bool) -> None:
@@ -101,7 +128,6 @@ def logout() -> None:
         save_config()
         rprint("Log out successful.")
 
-
 @app.command()
 def push(
     days: int = typer.Option(None, help="Expire after this many days."),
@@ -117,10 +143,10 @@ def push(
         None,
         help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..  Requires login.",
     ),
-    # prompt: bool = typer.Option(False, help="Prompt to enter payload interactively via the CLI."),
-    payload: str = typer.Argument(
-        "",
-    ),
+    auto: bool = typer.Option(False, help="Auto create password and passphrase"),
+    secret: str = typer.Option(None, help="something", hide_input=True, confirmation_prompt=True),
+    passphrase: str = typer.Option(None,  help="Add a passphrase"),
+    
 ) -> None:
     """
     Push a new password, secret note or text.
@@ -128,7 +154,33 @@ def push(
     path = "/p.json"
 
     data = {"password": {}}
-    data["password"]["payload"] = payload
+
+    if auto:
+        secret = generate_password(50)
+        passphrase = genpass(2)
+    
+    if not secret:
+        secret = typer.prompt("Enter secret", hide_input=True, confirmation_prompt=True)
+    if not passphrase:
+        first = None
+        second = None
+        # Rolling out own here as there is no easy way to prompt with a confirmation and at the same time allow it to be omitted
+        while True:
+            if first is None:
+                first = getpass.getpass("Enter passphrase (If the passphrase it empty if will be omitted): ")
+
+            if first in ("c", "C", ""):
+                passphrase = None
+                break
+            
+            if second is None:
+                second = getpass.getpass("Confirm passphrase: ")
+            
+            if first is not None and second is not None and first == second:
+                passphrase = first
+                break
+     
+    data["password"]["payload"] = secret
 
     # Option and user preference processing
     if days:
@@ -157,22 +209,36 @@ def push(
     elif user_config["expiration"]["retrieval_step"] != "Not Set":
         data["password"]["retrieval_step"] = user_config["expiration"]["retrieval_step"]
 
-    response = make_request("POST", path, post_data=data)
+    if passphrase is not None:
+        data["password"]["passphrase"] = passphrase
 
-    if response.status_code == 201:
-        body = response.json()
-        path = f'/p/{body["url_token"]}/preview.json'
-        response = make_request("GET", path)
+    # Lets add a progressbar to notify the something is happing.
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+    ) as progress:
+        progress.add_task(description="Processing...", total=None)
 
-        body = response.json()
-        if json_output():
-            print(body)
+        response = make_request("POST", path, post_data=data)
+
+        if response.status_code == 201:
+            body = response.json()
+            path = f'/p/{body["url_token"]}/preview.json'
+            response = make_request("GET", path)
+
+            body = response.json()
+            if json_output():
+                print(body)
+            else:
+                rprint(f"The secret has been pushed to:\n{body['url']}")
+            
+            if auto and passphrase:
+                rprint(f"Passphrase is: {passphrase}")
         else:
-            rprint(body["url"])
-    else:
-        rprint("Error:")
-        rprint(response.status_code)
-        rprint(response.text)
+            rprint("Error:")
+            rprint(response.status_code)
+            rprint(response.text)
 
 
 @app.command(name="push-file")
@@ -412,7 +478,7 @@ def make_request(method, path, post_data=None, upload_files=None):
     if method == "GET":
         if debug:
             rprint(f"Making GET request to {url + path} with headers {auth_headers}")
-        return requests.get(url + path, headers=auth_headers, timeout=5)
+        return requests.get(url + path, headers=auth_headers, timeout=30)
     elif method == "POST":
         if debug:
             rprint(
@@ -424,7 +490,7 @@ def make_request(method, path, post_data=None, upload_files=None):
             url + path,
             headers=auth_headers,
             json=post_data,
-            timeout=5,
+            timeout=30,
             files=upload_files,
         )
     elif method == "DELETE":
