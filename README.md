@@ -14,7 +14,7 @@
 
 Command Line Interface to Password Pusher.
   
-<strong>This utility is currently in pre-beta form.  Most core functionality exists and works but needs a bit of polishing.</strong>
+<strong>This utility is currently in BETA.  Most core functionality exists and works but needs a bit of polishing.</strong>
 
 </div>
 
