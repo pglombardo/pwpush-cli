@@ -1,16 +1,16 @@
 # type: ignore[attr-defined]
-from enum import Enum
 import getpass
 import secrets
 import string
+from enum import Enum
 
 import requests
 import typer
 from dateutil import parser
 from rich import print as rprint
 from rich.console import Console
-from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 
 from pwpush import version
 from pwpush.commands import config
@@ -26,6 +26,7 @@ class Color(str, Enum):
     yellow = "yellow"
     green = "green"
 
+
 app = typer.Typer(
     name="pwpush",
     help="Command Line Interface to Password Pusher.",
@@ -39,7 +40,7 @@ console = Console()
 
 def genpass(length=5):
     """Generate a passphrase"""
-    from xkcdpass.xkcd_password import generate_xkcdpassword, generate_wordlist
+    from xkcdpass.xkcd_password import generate_wordlist, generate_xkcdpassword
 
     wordlist = generate_wordlist(
         wordfile=None, min_length=5, max_length=9, valid_chars="[a-zA-Z1-9]"
@@ -59,7 +60,7 @@ def genpass(length=5):
 def generate_password(length=50):
     """Generate a secure random password"""
     characters = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join(secrets.choice(characters) for _ in range(length))
+    password = "".join(secrets.choice(characters) for _ in range(length))
     return password
 
 
@@ -128,6 +129,7 @@ def logout() -> None:
         save_config()
         rprint("Log out successful.")
 
+
 @app.command()
 def push(
     days: int = typer.Option(None, help="Expire after this many days."),
@@ -144,9 +146,10 @@ def push(
         help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..  Requires login.",
     ),
     auto: bool = typer.Option(False, help="Auto create password and passphrase"),
-    secret: str = typer.Option(None, help="something", hide_input=True, confirmation_prompt=True),
-    passphrase: str = typer.Option(None,  help="Add a passphrase"),
-    
+    secret: str = typer.Option(
+        None, help="something", hide_input=True, confirmation_prompt=True
+    ),
+    passphrase: str = typer.Option(None, help="Add a passphrase"),
 ) -> None:
     """
     Push a new password, secret note or text.
@@ -158,7 +161,7 @@ def push(
     if auto:
         secret = generate_password(50)
         passphrase = genpass(2)
-    
+
     if not secret:
         secret = typer.prompt("Enter secret", hide_input=True, confirmation_prompt=True)
     if not passphrase:
@@ -167,19 +170,21 @@ def push(
         # Rolling out own here as there is no easy way to prompt with a confirmation and at the same time allow it to be omitted
         while True:
             if first is None:
-                first = getpass.getpass("Enter passphrase (If the passphrase it empty if will be omitted): ")
+                first = getpass.getpass(
+                    "Enter passphrase (If the passphrase it empty if will be omitted): "
+                )
 
             if first in ("c", "C", ""):
                 passphrase = None
                 break
-            
+
             if second is None:
                 second = getpass.getpass("Confirm passphrase: ")
-            
+
             if first is not None and second is not None and first == second:
                 passphrase = first
                 break
-     
+
     data["password"]["payload"] = secret
 
     # Option and user preference processing
@@ -232,7 +237,7 @@ def push(
                 print(body)
             else:
                 rprint(f"The secret has been pushed to:\n{body['url']}")
-            
+
             if auto and passphrase:
                 rprint(f"Passphrase is: {passphrase}")
         else:

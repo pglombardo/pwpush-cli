@@ -1,19 +1,25 @@
 from unittest.mock import patch
+
 import pytest
 import requests
-
 from typer.testing import CliRunner
+
 import pwpush
+from pwpush.__main__ import app, generate_password, genpass
+
 # import the mocks
 from tests import *
-
-from pwpush.__main__ import app, genpass, generate_password
 
 runner = CliRunner()
 
 
-
-def test_push_no_options(mock_make_request, mock_create_password, mock_generate_password, mock_getpass, mock_genpass):
+def test_push_no_options(
+    mock_make_request,
+    mock_create_password,
+    mock_generate_password,
+    mock_getpass,
+    mock_genpass,
+):
     result = runner.invoke(app, "push")
     assert result.exit_code == 0
     assert "The secret has been pushed to" in result.output
@@ -47,10 +53,10 @@ def test_config_show_in_json():
     assert result.exit_code == 0
 
 
-
 def test_genpass():
     pw = genpass(2)
     assert pw
+
 
 def test_create_password():
     pw1 = generate_password(20)
