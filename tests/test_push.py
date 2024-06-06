@@ -42,7 +42,7 @@ def test_file_push(monkeypatch):
         build_request_mock({"url": "https://pwpush.test/en/f/secret-file-url"}),
     )
 
-    result = runner.invoke(app, ["push-file", "../README.md"])
+    result = runner.invoke(app, ["push-file", "./README.md"])
     assert result.exit_code == 0
     assert "https://pwpush.test/en/f/secret-file-url\n" == result.stdout
 
