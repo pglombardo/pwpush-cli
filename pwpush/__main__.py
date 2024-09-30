@@ -194,6 +194,9 @@ def push(
         data["password"]["expire_after_days"] = user_config["expiration"][
             "expire_after_days"
         ]
+    
+    if note:
+        data["password"]["note"] = note
 
     if views:
         data["password"]["expire_after_views"] = views
@@ -301,6 +304,9 @@ def pushFile(
         data["file_push"]["retrieval_step"] = user_config["expiration"][
             "retrieval_step"
         ]
+    
+    if note:
+        data["file_push"]["note"] = note
 
     with open(payload, "rb") as fd:
         upload_files = {"file_push[files][]": fd}
