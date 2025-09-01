@@ -35,12 +35,3 @@ security-updates:
   dependency-vulnerabilities:
     auto-security-updates-limit:
       - patch
-
-security:
-  ignore-vulnerabilities:
-    '67599':
-      reason: do not use a private index
-      expires: 2027-05-30
-    '70612':
-      reason: not using SSTI in CLI
-      expires: 2027-05-30
