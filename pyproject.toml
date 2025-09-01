@@ -48,7 +48,7 @@ shellingham = "^1.5.0"
 python-dateutil = "^2.8.2"
 xkcdpass = "1.19.9"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 bandit = "^1.7.10"
 black = {version = ">=22.6.0", allow-prereleases = true}
 darglint = "^1.8.0"
@@ -101,7 +101,7 @@ color_output = true
 
 [tool.mypy]
 # mypy configurations: https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
-python_version = 3.7
+python_version = "3.8"
 pretty = true
 show_traceback = true
 color_output = true
