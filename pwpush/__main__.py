@@ -194,7 +194,7 @@ def push(
         data["password"]["expire_after_days"] = user_config["expiration"][
             "expire_after_days"
         ]
-    
+
     if note:
         data["password"]["note"] = note
 
@@ -304,7 +304,7 @@ def pushFile(
         data["file_push"]["retrieval_step"] = user_config["expiration"][
             "retrieval_step"
         ]
-    
+
     if note:
         data["file_push"]["note"] = note
 
