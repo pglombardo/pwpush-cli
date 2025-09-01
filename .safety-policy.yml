@@ -1,0 +1,46 @@
+version: '3.0'
+
+scanning-settings:
+  max-depth: 6
+  exclude: []
+  include-files: []
+  system:
+    targets: []
+
+
+report:
+  dependency-vulnerabilities:
+    enabled: true
+    auto-ignore-in-report:
+      python:
+        environment-results: true
+        unpinned-requirements: true
+      cvss-severity: []
+
+
+fail-scan-with-exit-code:
+  dependency-vulnerabilities:
+    enabled: true
+    fail-on-any-of:
+      cvss-severity:
+        - critical
+        - medium
+        - high
+      exploitability:
+        - critical
+        - medium
+        - high
+
+security-updates:
+  dependency-vulnerabilities:
+    auto-security-updates-limit:
+      - patch
+
+security:
+  ignore-vulnerabilities:
+    '67599':
+      reason: do not use a private index
+      expires: 2027-05-30
+    '70612':
+      reason: not using SSTI in CLI
+      expires: 2027-05-30

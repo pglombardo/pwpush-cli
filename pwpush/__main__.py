@@ -149,7 +149,7 @@ def push(
     secret: str = typer.Option(
         None, help="something", hide_input=True, confirmation_prompt=True
     ),
-    passphrase: str = typer.Option(None, help="Add a passphrase"),
+    passphrase: str = typer.Option(None, help="Add a passphrase to access the secret"),
 ) -> None:
     """
     Push a new password, secret note or text.

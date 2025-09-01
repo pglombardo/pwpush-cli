@@ -32,6 +32,22 @@ def test_push_auto(mock_make_request):
     assert "https://pwpush.test/en/p/text-password-url\n" in result.stdout
 
 
+def test_basic_push_passphrase(monkeypatch):
+    monkeypatch.setattr(
+        requests, "post", build_request_mock({"url_token": "super-token"})
+    )
+    monkeypatch.setattr(
+        requests,
+        "get",
+        build_request_mock({"url": "https://pwpush.test/en/p/text-password-url"}),
+    )
+
+    result = runner.invoke(app, ["push", "mypassword", "--passphrase", "hello"])
+    print(result)
+    assert result.exit_code == 0
+    assert "https://pwpush.test/en/p/text-password-url\n" in result.stdout
+
+
 def test_file_push(monkeypatch):
     monkeypatch.setattr(
         requests, "post", build_request_mock({"url_token": "super-token"})
