@@ -54,7 +54,7 @@ mypy:
 .PHONY: check-safety
 check-safety:
 	poetry check
-	poetry run safety scan --full-report
+	poetry run safety scan --full-report --auth
 	poetry run bandit -ll --recursive pwpush tests
 
 .PHONY: lint
