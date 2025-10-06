@@ -77,6 +77,10 @@ def show_welcome_screen() -> None:
     console.print()
     console.print("[bold blue]🔐 Password Pusher CLI[/bold blue]")
     console.print(f"[dim]Version {version}[/dim]")
+    console.print(f"[dim]Server: {user_config['instance']['url']}[/dim]")
+    console.print(
+        f"[dim]Change server: [cyan]pwpush config set url <new-url>[/cyan][/dim]"
+    )
     console.print()
     console.print("[bold]Quick Start:[/bold]")
     console.print(
