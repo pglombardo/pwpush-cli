@@ -296,3 +296,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: https://docs.pwpush.com
 - **GitHub Repository**: https://github.com/pglombardo/pwpush-cli
 - **Open Source Project**: https://github.com/pglombardo/PasswordPusher
+
+## About Apnotic
+
+This CLI tool is built by **Apnotic**.
+
+- **Company Homepage**: https://apnotic.com
+- **Password Pusher Pro**: https://pwpush.com
