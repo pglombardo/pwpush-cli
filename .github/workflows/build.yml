@@ -38,7 +38,6 @@ jobs:
         make test
 
     - name: Run safety checks
-      if: ${{ secrets.SAFETY_API_TOKEN != '' }}
       env:
         SAFETY_API_KEY: ${{ secrets.SAFETY_API_TOKEN }}
       run: |
