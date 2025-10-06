@@ -37,8 +37,8 @@ def test_parse_boolean():
     assert parse_boolean(123) is False
 
 
-def test_push_deletable_by_viewer_fix():
-    """Test that deletable_by_viewer is set correctly in push command."""
+def test_push_deletable_by_viewer_true():
+    """Test that deletable_by_viewer is set to True when --deletable is used."""
     with patch("pwpush.__main__.make_request") as mock_request, patch(
         "getpass.getpass"
     ) as mock_getpass:
@@ -58,7 +58,7 @@ def test_push_deletable_by_viewer_fix():
 
         mock_request.side_effect = [mock_response, mock_preview_response]
 
-        # Test with deletable=True
+        # Test with --deletable
         result = runner.invoke(
             app, ["push", "--secret", "test-password", "--deletable"]
         )
@@ -71,8 +71,8 @@ def test_push_deletable_by_viewer_fix():
         assert post_data["password"]["deletable_by_viewer"] is True
 
 
-def test_push_retrieval_step_fix():
-    """Test that retrieval_step is set correctly in push command."""
+def test_push_deletable_by_viewer_false():
+    """Test that deletable_by_viewer is set to False when --no-deletable is used."""
     with patch("pwpush.__main__.make_request") as mock_request, patch(
         "getpass.getpass"
     ) as mock_getpass:
@@ -92,7 +92,73 @@ def test_push_retrieval_step_fix():
 
         mock_request.side_effect = [mock_response, mock_preview_response]
 
-        # Test with retrieval_step=True
+        # Test with --no-deletable
+        result = runner.invoke(
+            app, ["push", "--secret", "test-password", "--no-deletable"]
+        )
+
+        assert result.exit_code == 0
+
+        # Verify the request was made with correct deletable_by_viewer value
+        call_args = mock_request.call_args_list[0]
+        post_data = call_args[1]["post_data"]
+        assert post_data["password"]["deletable_by_viewer"] is False
+
+
+def test_push_deletable_by_viewer_none():
+    """Test that deletable_by_viewer is not set when no flag is provided."""
+    with patch("pwpush.__main__.make_request") as mock_request, patch(
+        "getpass.getpass"
+    ) as mock_getpass:
+
+        # Mock getpass to avoid interactive prompts
+        mock_getpass.return_value = ""
+
+        # Mock successful response
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"url_token": "test-token"}
+
+        mock_preview_response = MagicMock()
+        mock_preview_response.json.return_value = {
+            "url": "https://pwpush.com/en/p/test-token"
+        }
+
+        mock_request.side_effect = [mock_response, mock_preview_response]
+
+        # Test without deletable flag
+        result = runner.invoke(app, ["push", "--secret", "test-password"])
+
+        assert result.exit_code == 0
+
+        # Verify the request was made without deletable_by_viewer in payload
+        call_args = mock_request.call_args_list[0]
+        post_data = call_args[1]["post_data"]
+        assert "deletable_by_viewer" not in post_data["password"]
+
+
+def test_push_retrieval_step_true():
+    """Test that retrieval_step is set to True when --retrieval-step is used."""
+    with patch("pwpush.__main__.make_request") as mock_request, patch(
+        "getpass.getpass"
+    ) as mock_getpass:
+
+        # Mock getpass to avoid interactive prompts
+        mock_getpass.return_value = ""
+
+        # Mock successful response
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"url_token": "test-token"}
+
+        mock_preview_response = MagicMock()
+        mock_preview_response.json.return_value = {
+            "url": "https://pwpush.com/en/p/test-token"
+        }
+
+        mock_request.side_effect = [mock_response, mock_preview_response]
+
+        # Test with --retrieval-step
         result = runner.invoke(
             app, ["push", "--secret", "test-password", "--retrieval-step"]
         )
@@ -105,8 +171,74 @@ def test_push_retrieval_step_fix():
         assert post_data["password"]["retrieval_step"] is True
 
 
-def test_push_file_deletable_by_viewer_fix():
-    """Test that deletable_by_viewer is set correctly in push-file command."""
+def test_push_retrieval_step_false():
+    """Test that retrieval_step is set to False when --no-retrieval-step is used."""
+    with patch("pwpush.__main__.make_request") as mock_request, patch(
+        "getpass.getpass"
+    ) as mock_getpass:
+
+        # Mock getpass to avoid interactive prompts
+        mock_getpass.return_value = ""
+
+        # Mock successful response
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"url_token": "test-token"}
+
+        mock_preview_response = MagicMock()
+        mock_preview_response.json.return_value = {
+            "url": "https://pwpush.com/en/p/test-token"
+        }
+
+        mock_request.side_effect = [mock_response, mock_preview_response]
+
+        # Test with --no-retrieval-step
+        result = runner.invoke(
+            app, ["push", "--secret", "test-password", "--no-retrieval-step"]
+        )
+
+        assert result.exit_code == 0
+
+        # Verify the request was made with correct retrieval_step value
+        call_args = mock_request.call_args_list[0]
+        post_data = call_args[1]["post_data"]
+        assert post_data["password"]["retrieval_step"] is False
+
+
+def test_push_retrieval_step_none():
+    """Test that retrieval_step is not set when no flag is provided."""
+    with patch("pwpush.__main__.make_request") as mock_request, patch(
+        "getpass.getpass"
+    ) as mock_getpass:
+
+        # Mock getpass to avoid interactive prompts
+        mock_getpass.return_value = ""
+
+        # Mock successful response
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"url_token": "test-token"}
+
+        mock_preview_response = MagicMock()
+        mock_preview_response.json.return_value = {
+            "url": "https://pwpush.com/en/p/test-token"
+        }
+
+        mock_request.side_effect = [mock_response, mock_preview_response]
+
+        # Test without retrieval_step flag
+        result = runner.invoke(app, ["push", "--secret", "test-password"])
+
+        assert result.exit_code == 0
+
+        # Verify the request was made without retrieval_step in payload
+        call_args = mock_request.call_args_list[0]
+        post_data = call_args[1]["post_data"]
+        assert "retrieval_step" not in post_data["password"]
+
+
+def test_push_file_deletable_by_viewer_true():
+    """Test that deletable_by_viewer is set to True when --deletable is used in push-file."""
     with patch("pwpush.__main__.make_request") as mock_request, patch(
         "builtins.open", create=True
     ) as mock_open:
@@ -127,7 +259,7 @@ def test_push_file_deletable_by_viewer_fix():
 
         mock_request.side_effect = [mock_response, mock_preview_response]
 
-        # Test with deletable=True
+        # Test with --deletable
         result = runner.invoke(app, ["push-file", "test-file.txt", "--deletable"])
 
         assert result.exit_code == 0
@@ -138,8 +270,8 @@ def test_push_file_deletable_by_viewer_fix():
         assert post_data["file_push"]["deletable_by_viewer"] is True
 
 
-def test_push_file_retrieval_step_fix():
-    """Test that retrieval_step is set correctly in push-file command."""
+def test_push_file_deletable_by_viewer_false():
+    """Test that deletable_by_viewer is set to False when --no-deletable is used in push-file."""
     with patch("pwpush.__main__.make_request") as mock_request, patch(
         "builtins.open", create=True
     ) as mock_open:
@@ -160,7 +292,73 @@ def test_push_file_retrieval_step_fix():
 
         mock_request.side_effect = [mock_response, mock_preview_response]
 
-        # Test with retrieval_step=True
+        # Test with --no-deletable
+        result = runner.invoke(app, ["push-file", "test-file.txt", "--no-deletable"])
+
+        assert result.exit_code == 0
+
+        # Verify the request was made with correct deletable_by_viewer value
+        call_args = mock_request.call_args_list[0]
+        post_data = call_args[1]["post_data"]
+        assert post_data["file_push"]["deletable_by_viewer"] is False
+
+
+def test_push_file_deletable_by_viewer_none():
+    """Test that deletable_by_viewer is not set when no flag is provided in push-file."""
+    with patch("pwpush.__main__.make_request") as mock_request, patch(
+        "builtins.open", create=True
+    ) as mock_open:
+
+        # Mock file content
+        mock_file = MagicMock()
+        mock_open.return_value.__enter__.return_value = mock_file
+
+        # Mock successful response
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"url_token": "test-token"}
+
+        mock_preview_response = MagicMock()
+        mock_preview_response.json.return_value = {
+            "url": "https://pwpush.com/en/f/test-token"
+        }
+
+        mock_request.side_effect = [mock_response, mock_preview_response]
+
+        # Test without deletable flag
+        result = runner.invoke(app, ["push-file", "test-file.txt"])
+
+        assert result.exit_code == 0
+
+        # Verify the request was made without deletable_by_viewer in payload
+        call_args = mock_request.call_args_list[0]
+        post_data = call_args[1]["post_data"]
+        assert "deletable_by_viewer" not in post_data["file_push"]
+
+
+def test_push_file_retrieval_step_true():
+    """Test that retrieval_step is set to True when --retrieval-step is used in push-file."""
+    with patch("pwpush.__main__.make_request") as mock_request, patch(
+        "builtins.open", create=True
+    ) as mock_open:
+
+        # Mock file content
+        mock_file = MagicMock()
+        mock_open.return_value.__enter__.return_value = mock_file
+
+        # Mock successful response
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"url_token": "test-token"}
+
+        mock_preview_response = MagicMock()
+        mock_preview_response.json.return_value = {
+            "url": "https://pwpush.com/en/f/test-token"
+        }
+
+        mock_request.side_effect = [mock_response, mock_preview_response]
+
+        # Test with --retrieval-step
         result = runner.invoke(app, ["push-file", "test-file.txt", "--retrieval-step"])
 
         assert result.exit_code == 0
@@ -169,6 +367,74 @@ def test_push_file_retrieval_step_fix():
         call_args = mock_request.call_args_list[0]
         post_data = call_args[1]["post_data"]
         assert post_data["file_push"]["retrieval_step"] is True
+
+
+def test_push_file_retrieval_step_false():
+    """Test that retrieval_step is set to False when --no-retrieval-step is used in push-file."""
+    with patch("pwpush.__main__.make_request") as mock_request, patch(
+        "builtins.open", create=True
+    ) as mock_open:
+
+        # Mock file content
+        mock_file = MagicMock()
+        mock_open.return_value.__enter__.return_value = mock_file
+
+        # Mock successful response
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"url_token": "test-token"}
+
+        mock_preview_response = MagicMock()
+        mock_preview_response.json.return_value = {
+            "url": "https://pwpush.com/en/f/test-token"
+        }
+
+        mock_request.side_effect = [mock_response, mock_preview_response]
+
+        # Test with --no-retrieval-step
+        result = runner.invoke(
+            app, ["push-file", "test-file.txt", "--no-retrieval-step"]
+        )
+
+        assert result.exit_code == 0
+
+        # Verify the request was made with correct retrieval_step value
+        call_args = mock_request.call_args_list[0]
+        post_data = call_args[1]["post_data"]
+        assert post_data["file_push"]["retrieval_step"] is False
+
+
+def test_push_file_retrieval_step_none():
+    """Test that retrieval_step is not set when no flag is provided in push-file."""
+    with patch("pwpush.__main__.make_request") as mock_request, patch(
+        "builtins.open", create=True
+    ) as mock_open:
+
+        # Mock file content
+        mock_file = MagicMock()
+        mock_open.return_value.__enter__.return_value = mock_file
+
+        # Mock successful response
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"url_token": "test-token"}
+
+        mock_preview_response = MagicMock()
+        mock_preview_response.json.return_value = {
+            "url": "https://pwpush.com/en/f/test-token"
+        }
+
+        mock_request.side_effect = [mock_response, mock_preview_response]
+
+        # Test without retrieval_step flag
+        result = runner.invoke(app, ["push-file", "test-file.txt"])
+
+        assert result.exit_code == 0
+
+        # Verify the request was made without retrieval_step in payload
+        call_args = mock_request.call_args_list[0]
+        post_data = call_args[1]["post_data"]
+        assert "retrieval_step" not in post_data["file_push"]
 
 
 def test_pretty_output_fix():
