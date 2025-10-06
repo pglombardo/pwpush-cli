@@ -1,5 +1,5 @@
 # type: ignore[attr-defined]
-"""Command Line Interface to Password Pusher."""
+"""Command Line Interface to Password Pusher - secure information distribution with automatic expiration controls."""
 
 import sys
 

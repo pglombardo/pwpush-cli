@@ -101,8 +101,13 @@ def show_welcome_screen() -> None:
     )
     console.print()
     console.print(
-        "[dim]Securely share passwords, secrets, and files with expiration controls.[/dim]"
+        "[dim]Secure information distribution with automatic expiration controls.[/dim]"
     )
+    console.print()
+    console.print("[bold]About:[/bold]")
+    console.print("  [dim]Built by Apnotic[/dim]")
+    console.print("  [dim]Homepage: [cyan]https://apnotic.com[/cyan][/dim]")
+    console.print("  [dim]Password Pusher Pro: [cyan]https://pwpush.com[/cyan][/dim]")
     console.print()
 
 

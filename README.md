@@ -12,22 +12,31 @@
 [![Semantic Versions](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--versions-e10079.svg)](https://github.com/pglombardo/pwpush-cli/releases)
 [![License](https://img.shields.io/github/license/pglombardo/pwpush-cli)](https://github.com/pglombardo/pwpush/blob/master/LICENSE)
 
-**Command Line Interface for Password Pusher** - Securely share passwords, secrets, and files with expiration controls.
+**Command Line Interface for Password Pusher** - Secure information distribution with automatic expiration controls.
 
 </div>
 
 ## Overview
 
-The `pwpush` CLI is a powerful command-line tool that interfaces with [Password Pusher](https://pwpush.com) instances to securely share sensitive information. It supports both the hosted services (eu.pwpush.com, us.pwpush.com) and self-hosted instances.
+The `pwpush` CLI is a powerful command-line tool that interfaces with [Password Pusher](https://pwpush.com) instances for secure information distribution. It supports both the hosted services (eu.pwpush.com, us.pwpush.com) and self-hosted instances.
+
+### Why Secure Information Distribution?
+
+Traditional communication tools create permanent digital footprints that can be exploited years later. Password Pusher sidesteps this by creating:
+
+- **Self-destructing shareable links** that auto-expire after a preset number of views
+- **Time-based expiration** that automatically deletes content after a set duration  
+- **Zero permanent storage** - once expired, the information is completely removed
+- **Full audit trails** so you know exactly who accessed what and when
 
 ### Key Features
 
-- 🔐 **Secure Sharing**: Share passwords, secrets, and files with automatic expiration
+- 🔐 **Secure Information Distribution**: Self-destructing links for passwords, secrets, and files with automatic expiration and complete audit trails.
 - 🌐 **Multi-Instance Support**: Works with eu.pwpush.com, us.pwpush.com, or your own instance
 - 🔑 **Authentication**: Full API integration with user accounts
-- 📊 **Audit Logs**: Track access and usage of shared content
+- 📊 **Audit Logs**: Track access and usage of distributed content
 - 🎯 **Flexible Expiration**: Set expiration by views, days, or both
-- 📁 **File Support**: Share files securely with the same expiration controls
+- 📁 **File Support**: Distribute files securely with the same expiration controls and audit logs
 - 🎨 **Rich Output**: Beautiful terminal output with tables and formatting
 
 ## Installation
@@ -43,16 +52,16 @@ pip install pwpush
 ### 1. Basic Usage (Anonymous)
 
 ```bash
-# Share a password (interactive mode)
+# Push a password (interactive mode)
 pwpush push
 
-# Share a password directly
+# Push a password directly
 pwpush push --secret "mypassword123"
 
 # Auto-generate a secure password
 pwpush push --auto
 
-# Share with custom expiration (7 days, 5 views)
+# Push with custom expiration (7 days, 5 views)
 pwpush push --secret "mypassword" --days 7 --views 5
 ```
 
@@ -88,16 +97,16 @@ Get your API token from: https://pwpush.com/en/users/token
 
 ## Common Commands
 
-### Sharing Content
+### Pushing Content
 
 ```bash
-# Share a password with custom settings
+# Push a password with custom settings
 pwpush push --secret "password123" --days 3 --views 10 --deletable
 
-# Share a file
+# Push a file
 pwpush push-file document.pdf --days 7 --views 5
 
-# Share with a reference note (requires authentication)
+# Push with a reference note (requires authentication)
 pwpush push --secret "password" --note "Employee onboarding - John Doe"
 
 # Require click-through for retrieval (prevents URL scanners)
@@ -160,7 +169,7 @@ pwpush --debug push --secret "password"
 ### Batch Operations
 
 ```bash
-# Generate and share multiple passwords
+# Generate and distribute multiple passwords
 for i in {1..5}; do
   pwpush --json push --auto --note "Batch password $i"
 done
@@ -197,30 +206,30 @@ done
 ### Developer Workflow
 
 ```bash
-# Share database credentials with team
+# Push database credentials with team
 pwpush push --secret "db_password_123" --days 1 --views 3 --note "Staging DB - expires in 24h"
 
-# Share API keys securely
+# Push API keys securely
 pwpush push --secret "sk_live_..." --days 7 --views 1 --note "Production API Key"
 ```
 
 ### System Administration
 
 ```bash
-# Share temporary access credentials
+# Push temporary access credentials
 pwpush push --auto --days 1 --views 1 --note "Emergency access - $(date)"
 
-# Share configuration files
+# Push configuration files
 pwpush push-file /etc/nginx/nginx.conf --days 3 --views 5
 ```
 
 ### Team Collaboration
 
 ```bash
-# Share deployment secrets
+# Push deployment secrets
 pwpush push --secret "deploy_token" --days 1 --views 10 --note "Release v2.1.0"
 
-# Share sensitive documents
+# Push sensitive documents
 pwpush push-file sensitive_document.pdf --days 7 --views 3 --retrieval-step
 ```
 
@@ -287,3 +296,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation**: https://docs.pwpush.com
 - **GitHub Repository**: https://github.com/pglombardo/pwpush-cli
 - **Open Source Project**: https://github.com/pglombardo/PasswordPusher
+
+## About Apnotic
+
+This CLI tool is built by **Apnotic**.
+
+- **Company Homepage**: https://apnotic.com
+- **Password Pusher Pro**: https://pwpush.com
