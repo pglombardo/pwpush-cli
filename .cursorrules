@@ -1,0 +1,184 @@
+# Cursor AI Rules for Password Pusher CLI
+
+## Project Overview
+This is a Python CLI tool for Password Pusher - a secure password sharing service. The CLI allows users to push passwords, secrets, and files with expiration controls to Password Pusher instances.
+
+## Key Technologies & Dependencies
+- **Python 3.9.2+** (minimum requirement)
+- **Typer** - CLI framework with rich output
+- **Rich** - Beautiful terminal output with tables and formatting
+- **Requests** - HTTP client for API communication
+- **Poetry** - Dependency management and packaging
+- **Pytest** - Testing framework
+- **Black** - Code formatting
+- **MyPy** - Type checking
+- **Bandit** - Security linting
+
+## Project Structure
+```
+pwpush/
+├── __init__.py          # Package initialization and version
+├── __main__.py          # Main CLI application entry point
+├── commands/
+│   └── config.py        # Configuration management commands
+├── options.py           # Configuration and CLI options handling
+└── utils.py             # Utility functions
+```
+
+## Coding Standards
+
+### Code Style
+- **Black** formatting with 88 character line length
+- **isort** for import organization
+- **Type hints** required for all functions
+- **Docstrings** following Google style
+- **MyPy** strict type checking enabled
+
+### Security
+- **Bandit** security linting required
+- **Safety** dependency vulnerability scanning
+- Never log or expose sensitive data (passwords, tokens, secrets)
+- Use `hide_input=True` for password prompts
+- Validate all user inputs
+
+### CLI Design Patterns
+- Use **Typer** for all CLI commands
+- Rich console output with tables and colors
+- Support both human-readable and JSON output modes
+- Implement proper error handling with meaningful messages
+- Use `typer.Exit()` for clean command termination
+
+### Configuration Management
+- Store user config in `~/.config/pwpush/config.ini`
+- Use `configparser.ConfigParser` for configuration
+- Provide sensible defaults
+- Support both CLI flags and config file settings
+- CLI flags override config file settings
+
+### API Communication
+- Use **requests** library for HTTP communication
+- Implement proper timeout handling (30s for requests, 5s for auth)
+- Support authentication via headers (`X-User-Email`, `X-User-Token`)
+- Handle network errors gracefully with user-friendly messages
+- Support both password pushes (`/p.json`) and file pushes (`/f.json`)
+
+## Development Workflow
+
+### Testing
+- Write tests for all new functionality
+- Use `pytest` with `CliRunner` for CLI testing
+- Mock external API calls in tests
+- Test both success and error scenarios
+- Maintain high test coverage
+
+### Code Quality
+- Run `make lint` before committing (includes tests, formatting, type checking, security)
+- Use `make codestyle` for automatic formatting
+- All code must pass MyPy type checking
+- Security scan with Bandit required
+
+### Version Management
+- Follow semantic versioning
+- Update version in `pyproject.toml`
+- Update `__init__.py` version function
+- Tag releases appropriately
+
+## Key Features to Maintain
+
+### Core Functionality
+- **Password/Secret Pushing**: Support interactive and direct secret input
+- **File Upload**: Support file sharing with same expiration controls
+- **Auto-generation**: Generate secure passwords and passphrases
+- **Expiration Controls**: Days, views, or both
+- **Authentication**: Login/logout with API tokens
+- **Audit Logs**: Track access and usage
+- **Configuration**: Persistent settings management
+
+### User Experience
+- **Rich Output**: Beautiful tables and formatted output
+- **JSON Support**: Machine-readable output for scripting
+- **Verbose/Debug Modes**: Detailed information when needed
+- **Error Handling**: Clear, actionable error messages
+- **Help System**: Comprehensive help and examples
+
+### Security Features
+- **Retrieval Step**: Optional click-through to prevent URL scanners
+- **Deletable Content**: Allow viewers to delete after retrieval
+- **Passphrase Protection**: Optional additional encryption
+- **Reference Notes**: Encrypted notes visible only to creator
+
+## API Integration
+- Support multiple Password Pusher instances (eu.pwpush.com, us.pwpush.com, self-hosted)
+- Handle authentication via email/token pairs
+- Support both password and file push endpoints
+- Implement proper error handling for API responses
+- Support audit and management endpoints for authenticated users
+
+## Error Handling Patterns
+```python
+# Network errors
+except requests.exceptions.Timeout:
+    rprint("[red]Error: Request timed out. Please check your connection and try again.[/red]")
+    raise typer.Exit(1)
+
+# File errors
+except FileNotFoundError:
+    rprint(f"[red]Error: File '{payload}' not found.[/red]")
+    raise typer.Exit(1)
+
+# Authentication errors
+if user_config["instance"]["email"] == "Not Set":
+    rprint("You must log into an instance first.")
+    raise typer.Exit(1)
+```
+
+## Output Patterns
+```python
+# Rich console output
+console.print("[bold blue]🔐 Password Pusher CLI[/bold blue]")
+console.print(f"[dim]Version {version}[/dim]")
+
+# Table output
+table = Table("Key", "Value", "Description")
+table.add_row("URL", user_config["instance"]["url"], "The Password Pusher instance")
+
+# JSON output
+if json_output():
+    print(json.dumps(response_data))
+else:
+    # Human-readable output
+    rprint(f"The secret has been pushed to:\n{body['url']}")
+```
+
+## Configuration Keys
+- **Instance**: `url`, `email`, `token`
+- **Expiration**: `expire_after_days`, `expire_after_views`, `retrieval_step`, `deletable_by_viewer`
+- **CLI**: `json`, `verbose`, `pretty`, `debug`
+
+## Best Practices
+1. **Always validate user input** before processing
+2. **Use type hints** for all function parameters and return values
+3. **Handle network errors gracefully** with user-friendly messages
+4. **Support both interactive and non-interactive modes**
+5. **Provide comprehensive help and examples**
+6. **Test with multiple Password Pusher instances**
+7. **Maintain backward compatibility** when possible
+8. **Use Rich for all terminal output** (tables, colors, formatting)
+9. **Implement proper logging** for debug mode
+10. **Follow security best practices** for handling sensitive data
+
+## Common Commands to Support
+- `pwpush push` - Push passwords/secrets
+- `pwpush push-file` - Upload files
+- `pwpush login/logout` - Authentication
+- `pwpush list` - List active pushes
+- `pwpush audit` - View audit logs
+- `pwpush expire` - Expire pushes
+- `pwpush config` - Configuration management
+
+## Documentation Standards
+- Update README.md for new features
+- Include examples in docstrings
+- Document all configuration options
+- Provide troubleshooting guidance
+- Maintain API documentation links
