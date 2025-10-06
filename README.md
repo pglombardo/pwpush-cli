@@ -13,6 +13,7 @@
 [![License](https://img.shields.io/github/license/pglombardo/pwpush-cli)](https://github.com/pglombardo/pwpush/blob/master/LICENSE)
 
 **Command Line Interface for Password Pusher**
+<br>
 Secure information distribution with automatic expiration controls.
 
 </div>
