@@ -12,7 +12,8 @@
 [![Semantic Versions](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--versions-e10079.svg)](https://github.com/pglombardo/pwpush-cli/releases)
 [![License](https://img.shields.io/github/license/pglombardo/pwpush-cli)](https://github.com/pglombardo/pwpush/blob/master/LICENSE)
 
-**Command Line Interface for Password Pusher** - Secure information distribution with automatic expiration controls.
+**Command Line Interface for Password Pusher**
+Secure information distribution with automatic expiration controls.
 
 </div>
 
