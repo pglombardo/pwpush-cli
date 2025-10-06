@@ -79,7 +79,7 @@ def show_welcome_screen() -> None:
     console.print(f"[dim]Version {version}[/dim]")
     console.print(f"[dim]Server: {user_config['instance']['url']}[/dim]")
     console.print(
-        f"[dim]Change server: [cyan]pwpush config set url <new-url>[/cyan][/dim]"
+        f"[dim]Change server: [cyan]pwpush config set --key url --value <new-url>[/cyan][/dim]"
     )
     console.print()
     console.print("[bold]Quick Start:[/bold]")
@@ -195,6 +195,7 @@ def logout() -> None:
 
 @app.command()
 def push(
+    ctx: typer.Context,
     days: int = typer.Option(None, help="Expire after this many days."),
     views: int = typer.Option(None, help="Expire after this many views."),
     deletable: bool = typer.Option(
@@ -217,7 +218,16 @@ def push(
     ),
     passphrase: str = typer.Option(
         None,
-        help="Optional passphrase to protect the secret (will prompt if not provided)",
+        help="Optional passphrase to protect the secret",
+    ),
+    prompt_passphrase: bool = typer.Option(
+        False,
+        "--prompt-passphrase",
+        help="Prompt for passphrase interactively",
+    ),
+    kind: str = typer.Option(
+        "text",
+        help="The kind of push to create. Options: text, url, qr. Default: text",
     ),
 ) -> None:
     """
@@ -229,10 +239,25 @@ def push(
         pwpush push --auto                            # Auto-generate password
         pwpush push --secret "data" --deletable       # Allow deletion by viewer
         pwpush push --secret "data" --retrieval-step  # Require click-through
+        pwpush push --secret "https://example.com" --kind url  # Push as URL
+        pwpush push --secret "QR data" --kind qr      # Push as QR code
+        pwpush push --secret "data" --passphrase "pass"  # With passphrase
+        pwpush push --secret "data" --prompt-passphrase  # Prompt for passphrase
     """
     path = "/p.json"
 
     data = {"password": {}}
+
+    # Validate kind parameter
+    valid_kinds = ["text", "url", "qr"]
+    if kind not in valid_kinds:
+        rprint(
+            f"[red]Error: Invalid kind '{kind}'. Must be one of: {', '.join(valid_kinds)}[/red]"
+        )
+        raise typer.Exit(1)
+
+    # Set the kind in the request data
+    data["password"]["kind"] = kind
 
     if auto:
         secret = generate_password(50)
@@ -240,7 +265,10 @@ def push(
 
     if not secret:
         secret = typer.prompt("Enter secret", hide_input=True, confirmation_prompt=True)
-    if not passphrase:
+
+    # Handle passphrase logic
+    if prompt_passphrase:
+        # User provided --prompt-passphrase flag, prompt for it
         first = None
         second = None
         # Rolling out own here as there is no easy way to prompt with a confirmation and at the same time allow it to be omitted
@@ -260,6 +288,8 @@ def push(
             if first is not None and second is not None and first == second:
                 passphrase = first
                 break
+    # If passphrase is None (not provided), leave it as None
+    # If passphrase has a value (provided with --passphrase value), use that value
 
     data["password"]["payload"] = secret
 
@@ -357,6 +387,7 @@ def pushFile(
 
     data = {"file_push": {}}
     data["file_push"]["payload"] = ""
+    data["file_push"]["kind"] = "file"
 
     # Option and user preference processing
     if days:

@@ -103,6 +103,12 @@ Get your API token from: https://pwpush.com/en/users/token
 # Push a password with custom settings
 pwpush push --secret "password123" --days 3 --views 10 --deletable
 
+# Push as URL (for sharing links)
+pwpush push --secret "https://example.com" --kind url
+
+# Push as QR code
+pwpush push --secret "QR data content" --kind qr
+
 # Push a file
 pwpush push-file document.pdf --days 7 --views 5
 
@@ -147,6 +153,24 @@ pwpush logout
 ```
 
 ## Advanced Usage
+
+### Push Types
+
+The `--kind` parameter allows you to specify the type of content being pushed:
+
+```bash
+# Text/Password (default)
+pwpush push --secret "mypassword" --kind text
+
+# URL - for sharing links that will be displayed as clickable URLs
+pwpush push --secret "https://example.com" --kind url
+
+# QR Code - for content that will be displayed as a QR code
+pwpush push --secret "QR data content" --kind qr
+
+# File - automatically set when using push-file command
+pwpush push-file document.pdf  # kind is automatically set to "file"
+```
 
 ### JSON Output
 
@@ -211,6 +235,9 @@ pwpush push --secret "db_password_123" --days 1 --views 3 --note "Staging DB - e
 
 # Push API keys securely
 pwpush push --secret "sk_live_..." --days 7 --views 1 --note "Production API Key"
+
+# Share deployment URLs as clickable links
+pwpush push --secret "https://staging.example.com/deploy" --kind url --days 1 --views 5
 ```
 
 ### System Administration

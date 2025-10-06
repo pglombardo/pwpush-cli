@@ -82,3 +82,37 @@ def test_create_password():
 
     pw2 = generate_password()
     assert len(pw2) == 50
+
+
+def test_push_with_kind_url(mock_make_request):
+    result = runner.invoke(
+        app,
+        [
+            "push",
+            "--secret",
+            "https://example.com",
+            "--kind",
+            "url",
+            "--passphrase",
+            "testpass",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "The secret has been pushed to" in result.output
+
+
+def test_push_with_kind_qr(mock_make_request):
+    result = runner.invoke(
+        app, ["push", "--secret", "QR data", "--kind", "qr", "--passphrase", "testpass"]
+    )
+    assert result.exit_code == 0
+    assert "The secret has been pushed to" in result.output
+
+
+def test_push_with_invalid_kind():
+    result = runner.invoke(
+        app,
+        ["push", "--secret", "test", "--kind", "invalid", "--passphrase", "testpass"],
+    )
+    assert result.exit_code == 1
+    assert "Invalid kind 'invalid'. Must be one of: text, url, qr" in result.output
