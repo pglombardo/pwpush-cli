@@ -31,12 +31,12 @@ Traditional communication tools create permanent digital footprints that can be 
 
 ### Key Features
 
-- 🔐 **Secure Information Distribution**: Distribute passwords, secrets, and files with automatic expiration
+- 🔐 **Secure Information Distribution**: Self-destructing links for passwords, secrets, and files with automatic expiration and complete audit trails.
 - 🌐 **Multi-Instance Support**: Works with eu.pwpush.com, us.pwpush.com, or your own instance
 - 🔑 **Authentication**: Full API integration with user accounts
 - 📊 **Audit Logs**: Track access and usage of distributed content
 - 🎯 **Flexible Expiration**: Set expiration by views, days, or both
-- 📁 **File Support**: Distribute files securely with the same expiration controls
+- 📁 **File Support**: Distribute files securely with the same expiration controls and audit logs
 - 🎨 **Rich Output**: Beautiful terminal output with tables and formatting
 
 ## Installation
@@ -52,16 +52,16 @@ pip install pwpush
 ### 1. Basic Usage (Anonymous)
 
 ```bash
-# Distribute a password (interactive mode)
+# Push a password (interactive mode)
 pwpush push
 
-# Distribute a password directly
+# Push a password directly
 pwpush push --secret "mypassword123"
 
 # Auto-generate a secure password
 pwpush push --auto
 
-# Distribute with custom expiration (7 days, 5 views)
+# Push with custom expiration (7 days, 5 views)
 pwpush push --secret "mypassword" --days 7 --views 5
 ```
 
@@ -97,16 +97,16 @@ Get your API token from: https://pwpush.com/en/users/token
 
 ## Common Commands
 
-### Distributing Content
+### Pushing Content
 
 ```bash
-# Distribute a password with custom settings
+# Push a password with custom settings
 pwpush push --secret "password123" --days 3 --views 10 --deletable
 
-# Distribute a file
+# Push a file
 pwpush push-file document.pdf --days 7 --views 5
 
-# Distribute with a reference note (requires authentication)
+# Push with a reference note (requires authentication)
 pwpush push --secret "password" --note "Employee onboarding - John Doe"
 
 # Require click-through for retrieval (prevents URL scanners)
@@ -206,30 +206,30 @@ done
 ### Developer Workflow
 
 ```bash
-# Distribute database credentials with team
+# Push database credentials with team
 pwpush push --secret "db_password_123" --days 1 --views 3 --note "Staging DB - expires in 24h"
 
-# Distribute API keys securely
+# Push API keys securely
 pwpush push --secret "sk_live_..." --days 7 --views 1 --note "Production API Key"
 ```
 
 ### System Administration
 
 ```bash
-# Distribute temporary access credentials
+# Push temporary access credentials
 pwpush push --auto --days 1 --views 1 --note "Emergency access - $(date)"
 
-# Distribute configuration files
+# Push configuration files
 pwpush push-file /etc/nginx/nginx.conf --days 3 --views 5
 ```
 
 ### Team Collaboration
 
 ```bash
-# Distribute deployment secrets
+# Push deployment secrets
 pwpush push --secret "deploy_token" --days 1 --views 10 --note "Release v2.1.0"
 
-# Distribute sensitive documents
+# Push sensitive documents
 pwpush push-file sensitive_document.pdf --days 7 --views 3 --retrieval-step
 ```
 
