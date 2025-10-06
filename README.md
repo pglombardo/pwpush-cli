@@ -18,12 +18,12 @@
 
 ## Overview
 
-The `pwpush` CLI is a powerful command-line tool that interfaces with [Password Pusher](https://pwpush.com) instances to securely share sensitive information. It supports both the hosted service at pwpush.com and self-hosted instances.
+The `pwpush` CLI is a powerful command-line tool that interfaces with [Password Pusher](https://pwpush.com) instances to securely share sensitive information. It supports both the hosted services (eu.pwpush.com, us.pwpush.com) and self-hosted instances.
 
 ### Key Features
 
 - 🔐 **Secure Sharing**: Share passwords, secrets, and files with automatic expiration
-- 🌐 **Multi-Instance Support**: Works with pwpush.com, eu.pwpush.com, us.pwpush.com, or your own instance
+- 🌐 **Multi-Instance Support**: Works with eu.pwpush.com, us.pwpush.com, or your own instance
 - 🔑 **Authentication**: Full API integration with user accounts
 - 📊 **Audit Logs**: Track access and usage of shared content
 - 🎯 **Flexible Expiration**: Set expiration by views, days, or both
@@ -61,9 +61,6 @@ pwpush push --secret "mypassword" --days 7 --views 5
 The CLI works with multiple Password Pusher instances:
 
 ```bash
-# Use the main hosted service (default)
-pwpush config set --key url --value https://pwpush.com
-
 # Use the EU instance
 pwpush config set --key url --value https://eu.pwpush.com
 
@@ -175,7 +172,7 @@ done
 
 | Key | Description | Example |
 |-----|-------------|---------|
-| `url` | Password Pusher instance URL | `https://pwpush.com` |
+| `url` | Password Pusher instance URL | `https://eu.pwpush.com` |
 | `email` | Your account email | `user@example.com` |
 | `token` | Your API token | `abc123...` |
 
