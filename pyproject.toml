@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "pwpush"
-version = "0.11.0"
+version = "0.12.0"
 description = "Command Line Interface to Password Pusher - secure information distribution with automatic expiration controls."
 readme = "README.md"
 license = {text = "MIT"}
