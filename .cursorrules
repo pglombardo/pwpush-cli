@@ -176,6 +176,53 @@ else:
 - `pwpush expire` - Expire pushes
 - `pwpush config` - Configuration management
 
+## GitHub Label System
+
+### Core Labels
+- **bug** - Something isn't working
+- **enhancement** - New feature or request
+- **documentation** - Improvements or additions to documentation
+- **good first issue** - Good for newcomers
+- **help wanted** - Extra attention is needed
+- **duplicate** - This issue or pull request already exists
+- **invalid** - This doesn't seem right
+- **question** - Further information is requested
+- **wontfix** - This will not be worked on
+
+### Feature Categories
+- **cli** - Command line interface improvements and features
+- **config** - Configuration management and settings
+- **api** - API integration and communication
+- **security** - Security-related features and improvements
+- **pro-features** - Password Pusher Pro specific features
+
+### Component Areas
+- **authentication** - Login, logout, and authentication features
+- **file-upload** - File upload and management features
+- **notifications** - Email notifications and alerts
+
+### Technical Areas
+- **testing** - Tests, test improvements, and test infrastructure
+- **build** - Build system, CI/CD, and deployment
+- **packaging** - PyPI packaging, distribution, and installation
+- **performance** - Performance improvements and optimizations
+- **dependencies** - Pull requests that update a dependency file
+
+### Quality & UX
+- **ux** - User experience and interface improvements
+
+### Priority Levels
+- **priority: high** - High priority issues that need immediate attention
+- **priority: medium** - Medium priority issues for normal development cycle
+- **priority: low** - Low priority issues that can be addressed when time permits
+
+### Label Usage Guidelines
+- Use multiple labels to categorize issues comprehensively
+- Always include priority labels for better project management
+- Use `pro-features` for enterprise-specific enhancements
+- Combine `api` with other labels for API-related work
+- Use `security` for any security-related issues or improvements
+
 ## Documentation Standards
 - Update README.md for new features
 - Include examples in docstrings
