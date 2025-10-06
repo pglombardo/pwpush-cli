@@ -16,6 +16,7 @@ from pwpush import version
 from pwpush.commands import config
 from pwpush.commands.config import save_config, user_config
 from pwpush.options import cli_options
+from pwpush.utils import parse_boolean
 
 
 class Color(str, Enum):
@@ -62,15 +63,6 @@ def generate_password(length=50):
     characters = string.ascii_letters + string.digits + string.punctuation
     password = "".join(secrets.choice(characters) for _ in range(length))
     return password
-
-
-def parse_boolean(value) -> bool:
-    """Parse a boolean value from string or boolean input."""
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        return value.lower() in ["true", "yes", "on", "1"]
-    return False
 
 
 def version_callback(print_version: bool) -> None:

@@ -6,7 +6,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from pwpush.__main__ import app, parse_boolean
+from pwpush.__main__ import app
+from pwpush.utils import parse_boolean
 
 runner = CliRunner()
 

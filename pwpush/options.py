@@ -4,6 +4,8 @@ from pathlib import Path
 
 import typer
 
+from pwpush.utils import parse_boolean
+
 user_config = configparser.ConfigParser()
 user_config_dir = Path(typer.get_app_dir("pwpush"))
 user_config_file = user_config_dir.joinpath("config.ini")
@@ -78,15 +80,6 @@ def save_config():
     # Write out default settings
     with open(user_config_file, "w") as file:
         user_config.write(file)
-
-
-def parse_boolean(value) -> bool:
-    """Parse a boolean value from string or boolean input."""
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        return value.lower() in ["true", "yes", "on", "1"]
-    return False
 
 
 def json_output() -> bool:
