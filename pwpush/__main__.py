@@ -72,8 +72,39 @@ def version_callback(print_version: bool) -> None:
         raise typer.Exit()
 
 
+def show_welcome_screen() -> None:
+    """Display a helpful welcome screen with basic usage information."""
+    console.print()
+    console.print("[bold blue]🔐 Password Pusher CLI[/bold blue]")
+    console.print(f"[dim]Version {version}[/dim]")
+    console.print()
+    console.print("[bold]Quick Start:[/bold]")
+    console.print(
+        "  [cyan]pwpush push[/cyan]                    # Push a password (interactive)"
+    )
+    console.print(
+        "  [cyan]pwpush push --auto[/cyan]             # Auto-generate password"
+    )
+    console.print("  [cyan]pwpush push-file document.pdf[/cyan]  # Upload a file")
+    console.print(
+        "  [cyan]pwpush login[/cyan]                   # Login for advanced features"
+    )
+    console.print()
+    console.print("[bold]Need Help?[/bold]")
+    console.print("  [cyan]pwpush --help[/cyan]                  # Show all commands")
+    console.print(
+        "  [cyan]pwpush push --help[/cyan]             # Help for specific command"
+    )
+    console.print()
+    console.print(
+        "[dim]Securely share passwords, secrets, and files with expiration controls.[/dim]"
+    )
+    console.print()
+
+
 @app.callback(invoke_without_command=True)
 def load_cli_options(
+    ctx: typer.Context,
     json: str = typer.Option(
         False,
         "--json",
@@ -104,6 +135,10 @@ def load_cli_options(
     cli_options["verbose"] = parse_boolean(verbose)
     cli_options["debug"] = parse_boolean(debug)
     cli_options["pretty"] = parse_boolean(pretty)
+
+    # Show welcome screen if no command was provided
+    if ctx.invoked_subcommand is None:
+        show_welcome_screen()
 
 
 @app.command()
