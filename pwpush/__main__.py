@@ -195,6 +195,7 @@ def logout() -> None:
 
 @app.command()
 def push(
+    ctx: typer.Context,
     days: int = typer.Option(None, help="Expire after this many days."),
     views: int = typer.Option(None, help="Expire after this many views."),
     deletable: bool = typer.Option(
@@ -217,7 +218,12 @@ def push(
     ),
     passphrase: str = typer.Option(
         None,
-        help="Optional passphrase to protect the secret (will prompt if not provided)",
+        help="Optional passphrase to protect the secret",
+    ),
+    prompt_passphrase: bool = typer.Option(
+        False,
+        "--prompt-passphrase",
+        help="Prompt for passphrase interactively",
     ),
     kind: str = typer.Option(
         "text",
@@ -235,6 +241,8 @@ def push(
         pwpush push --secret "data" --retrieval-step  # Require click-through
         pwpush push --secret "https://example.com" --kind url  # Push as URL
         pwpush push --secret "QR data" --kind qr      # Push as QR code
+        pwpush push --secret "data" --passphrase "pass"  # With passphrase
+        pwpush push --secret "data" --prompt-passphrase  # Prompt for passphrase
     """
     path = "/p.json"
 
@@ -257,7 +265,10 @@ def push(
 
     if not secret:
         secret = typer.prompt("Enter secret", hide_input=True, confirmation_prompt=True)
-    if not passphrase:
+
+    # Handle passphrase logic
+    if prompt_passphrase:
+        # User provided --prompt-passphrase flag, prompt for it
         first = None
         second = None
         # Rolling out own here as there is no easy way to prompt with a confirmation and at the same time allow it to be omitted
@@ -277,6 +288,8 @@ def push(
             if first is not None and second is not None and first == second:
                 passphrase = first
                 break
+    # If passphrase is None (not provided), leave it as None
+    # If passphrase has a value (provided with --passphrase value), use that value
 
     data["password"]["payload"] = secret
 
