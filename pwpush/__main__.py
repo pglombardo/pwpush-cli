@@ -219,6 +219,10 @@ def push(
         None,
         help="Optional passphrase to protect the secret (will prompt if not provided)",
     ),
+    kind: str = typer.Option(
+        "text",
+        help="The kind of push to create. Options: text, url, qr. Default: text",
+    ),
 ) -> None:
     """
     Push a new password, secret note or text.
@@ -229,10 +233,23 @@ def push(
         pwpush push --auto                            # Auto-generate password
         pwpush push --secret "data" --deletable       # Allow deletion by viewer
         pwpush push --secret "data" --retrieval-step  # Require click-through
+        pwpush push --secret "https://example.com" --kind url  # Push as URL
+        pwpush push --secret "QR data" --kind qr      # Push as QR code
     """
     path = "/p.json"
 
     data = {"password": {}}
+
+    # Validate kind parameter
+    valid_kinds = ["text", "url", "qr"]
+    if kind not in valid_kinds:
+        rprint(
+            f"[red]Error: Invalid kind '{kind}'. Must be one of: {', '.join(valid_kinds)}[/red]"
+        )
+        raise typer.Exit(1)
+
+    # Set the kind in the request data
+    data["password"]["kind"] = kind
 
     if auto:
         secret = generate_password(50)
@@ -357,6 +374,7 @@ def pushFile(
 
     data = {"file_push": {}}
     data["file_push"]["payload"] = ""
+    data["file_push"]["kind"] = "file"
 
     # Option and user preference processing
     if days:
