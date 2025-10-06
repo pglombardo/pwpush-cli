@@ -80,25 +80,34 @@ def save_config():
         user_config.write(file)
 
 
+def parse_boolean(value) -> bool:
+    """Parse a boolean value from string or boolean input."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ["true", "yes", "on", "1"]
+    return False
+
+
 def json_output() -> bool:
     """
     Determines whether we should output in json.
     """
-    return cli_options["json"] == True or user_config["cli"]["json"] is True
+    return cli_options["json"] or parse_boolean(user_config["cli"]["json"])
 
 
 def verbose_output() -> bool:
     """
     Determines whether we should provide verbose output.
     """
-    return cli_options["verbose"] == True or user_config["cli"]["verbose"] is True
+    return cli_options["verbose"] or parse_boolean(user_config["cli"]["verbose"])
 
 
 def debug_output() -> bool:
     """
     Determines whether we should provide debug output.
     """
-    return cli_options["debug"] == True or user_config["cli"]["debug"] is True
+    return cli_options["debug"] or parse_boolean(user_config["cli"]["debug"])
 
 
 load_config()
