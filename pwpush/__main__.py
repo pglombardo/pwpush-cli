@@ -29,7 +29,7 @@ class Color(str, Enum):
 
 app = typer.Typer(
     name="pwpush",
-    help="Command Line Interface to Password Pusher.",
+    help="Command Line Interface to Password Pusher - securely share passwords, secrets, and files with expiration controls.",
     add_completion=False,
     rich_markup_mode="markdown",
     pretty_exceptions_show_locals=False,
@@ -82,14 +82,30 @@ def version_callback(print_version: bool) -> None:
 
 @app.callback(invoke_without_command=True)
 def load_cli_options(
-    json: str = typer.Option(False, "--json", "-j", help="Output in JSON."),
+    json: str = typer.Option(
+        False,
+        "--json",
+        "-j",
+        help="Output results in JSON format instead of human-readable text.",
+    ),
     verbose: str = typer.Option(
-        False, "--verbose", "-v", help="Verbose output where appropriate."
+        False,
+        "--verbose",
+        "-v",
+        help="Enable verbose output with additional details and progress information.",
     ),
     pretty: str = typer.Option(
-        False, "--pretty", "-p", help="Format JSON to be pretty."
+        False,
+        "--pretty",
+        "-p",
+        help="Format JSON output with proper indentation and line breaks.",
     ),
-    debug: str = typer.Option(False, "--debug", "-d", help="Debug mode."),
+    debug: str = typer.Option(
+        False,
+        "--debug",
+        "-d",
+        help="Enable debug mode with detailed request/response information.",
+    ),
 ) -> None:
     # CLI Args override configuration
     cli_options["json"] = parse_boolean(json)
@@ -107,8 +123,10 @@ def login(
     """
     Login to the registered Password Pusher instance.
 
-    Your email and API token is required.
+    Your email and API token is required for authenticated operations.
     Your API token is available at https://pwpush.com/en/users/token.
+
+    After login, you can use commands like 'list', 'audit', and 'expire'.
     """
     r = requests.get(f"{url}/en/d/active", auth=(email, token), timeout=5)
 
@@ -156,12 +174,25 @@ def push(
     ),
     auto: bool = typer.Option(False, help="Auto create password and passphrase"),
     secret: str = typer.Option(
-        None, help="something", hide_input=True, confirmation_prompt=True
+        None,
+        help="The secret text/password to push (will prompt if not provided)",
+        hide_input=True,
+        confirmation_prompt=True,
     ),
-    passphrase: str = typer.Option(None, help="Add a passphrase to access the secret"),
+    passphrase: str = typer.Option(
+        None,
+        help="Optional passphrase to protect the secret (will prompt if not provided)",
+    ),
 ) -> None:
     """
     Push a new password, secret note or text.
+
+    Examples:
+        pwpush push                                    # Interactive mode
+        pwpush push --secret "mypassword"             # Direct secret
+        pwpush push --auto                            # Auto-generate password
+        pwpush push --secret "data" --deletable       # Allow deletion by viewer
+        pwpush push --secret "data" --retrieval-step  # Require click-through
     """
     path = "/p.json"
 
@@ -279,6 +310,12 @@ def pushFile(
 ) -> None:
     """
     Push a new file.
+
+    Examples:
+        pwpush push-file document.pdf                    # Upload a file
+        pwpush push-file data.txt --deletable           # Allow deletion by viewer
+        pwpush push-file config.json --retrieval-step   # Require click-through
+        pwpush push-file backup.zip --days 7 --views 5  # Custom expiration
     """
     path = "/f.json"
 
