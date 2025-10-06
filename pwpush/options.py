@@ -12,7 +12,7 @@ user_config_file = user_config_dir.joinpath("config.ini")
 
 cli_options = {"json": False, "verbose": False, "debug": False}
 default_config = {"instance": {}}
-default_config["instance"]["url"] = "https://pwpush.com"
+default_config["instance"]["url"] = "https://eu.pwpush.com"
 default_config["instance"]["email"] = "Not Set"
 default_config["instance"]["token"] = "Not Set"
 
