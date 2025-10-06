@@ -16,6 +16,7 @@ from pwpush import version
 from pwpush.commands import config
 from pwpush.commands.config import save_config, user_config
 from pwpush.options import cli_options
+from pwpush.utils import parse_boolean
 
 
 class Color(str, Enum):
@@ -29,7 +30,7 @@ class Color(str, Enum):
 
 app = typer.Typer(
     name="pwpush",
-    help="Command Line Interface to Password Pusher.",
+    help="Command Line Interface to Password Pusher - securely share passwords, secrets, and files with expiration controls.",
     add_completion=False,
     rich_markup_mode="markdown",
     pretty_exceptions_show_locals=False,
@@ -73,20 +74,36 @@ def version_callback(print_version: bool) -> None:
 
 @app.callback(invoke_without_command=True)
 def load_cli_options(
-    json: str = typer.Option(False, "--json", "-j", help="Output in JSON."),
+    json: str = typer.Option(
+        False,
+        "--json",
+        "-j",
+        help="Output results in JSON format instead of human-readable text.",
+    ),
     verbose: str = typer.Option(
-        False, "--verbose", "-v", help="Verbose output where appropriate."
+        False,
+        "--verbose",
+        "-v",
+        help="Enable verbose output with additional details and progress information.",
     ),
     pretty: str = typer.Option(
-        False, "--pretty", "-p", help="Format JSON to be pretty."
+        False,
+        "--pretty",
+        "-p",
+        help="Format JSON output with proper indentation and line breaks.",
     ),
-    debug: str = typer.Option(False, "--debug", "-d", help="Debug mode."),
+    debug: str = typer.Option(
+        False,
+        "--debug",
+        "-d",
+        help="Enable debug mode with detailed request/response information.",
+    ),
 ) -> None:
     # CLI Args override configuration
-    cli_options["json"] = json.lower() in ["true", "yes", "on"]
-    cli_options["verbose"] = verbose.lower() in {"true", "yes", "on"}
-    cli_options["debug"] = debug.lower() in {"true", "yes", "on"}
-    cli_options["pretty"] = pretty.lower() in {"true", "yes", "on"}
+    cli_options["json"] = parse_boolean(json)
+    cli_options["verbose"] = parse_boolean(verbose)
+    cli_options["debug"] = parse_boolean(debug)
+    cli_options["pretty"] = parse_boolean(pretty)
 
 
 @app.command()
@@ -98,8 +115,10 @@ def login(
     """
     Login to the registered Password Pusher instance.
 
-    Your email and API token is required.
+    Your email and API token is required for authenticated operations.
     Your API token is available at https://pwpush.com/en/users/token.
+
+    After login, you can use commands like 'list', 'audit', and 'expire'.
     """
     r = requests.get(f"{url}/en/d/active", auth=(email, token), timeout=5)
 
@@ -147,12 +166,25 @@ def push(
     ),
     auto: bool = typer.Option(False, help="Auto create password and passphrase"),
     secret: str = typer.Option(
-        None, help="something", hide_input=True, confirmation_prompt=True
+        None,
+        help="The secret text/password to push (will prompt if not provided)",
+        hide_input=True,
+        confirmation_prompt=True,
     ),
-    passphrase: str = typer.Option(None, help="Add a passphrase to access the secret"),
+    passphrase: str = typer.Option(
+        None,
+        help="Optional passphrase to protect the secret (will prompt if not provided)",
+    ),
 ) -> None:
     """
     Push a new password, secret note or text.
+
+    Examples:
+        pwpush push                                    # Interactive mode
+        pwpush push --secret "mypassword"             # Direct secret
+        pwpush push --auto                            # Auto-generate password
+        pwpush push --secret "data" --deletable       # Allow deletion by viewer
+        pwpush push --secret "data" --retrieval-step  # Require click-through
     """
     path = "/p.json"
 
@@ -205,15 +237,15 @@ def push(
             "expire_after_views"
         ]
 
-    if deletable:
-        data["password"]["deletable_by_viewer"] = views
+    if deletable is not None:
+        data["password"]["deletable_by_viewer"] = deletable
     elif user_config["expiration"]["deletable_by_viewer"] != "Not Set":
         data["password"]["deletable_by_viewer"] = user_config["expiration"][
             "deletable_by_viewer"
         ]
 
-    if retrieval_step:
-        data["password"]["retrieval_step"] = views
+    if retrieval_step is not None:
+        data["password"]["retrieval_step"] = retrieval_step
     elif user_config["expiration"]["retrieval_step"] != "Not Set":
         data["password"]["retrieval_step"] = user_config["expiration"]["retrieval_step"]
 
@@ -270,6 +302,12 @@ def pushFile(
 ) -> None:
     """
     Push a new file.
+
+    Examples:
+        pwpush push-file document.pdf                    # Upload a file
+        pwpush push-file data.txt --deletable           # Allow deletion by viewer
+        pwpush push-file config.json --retrieval-step   # Require click-through
+        pwpush push-file backup.zip --days 7 --views 5  # Custom expiration
     """
     path = "/f.json"
 
@@ -291,15 +329,15 @@ def pushFile(
             "expire_after_views"
         ]
 
-    if deletable:
-        data["file_push"]["deletable_by_viewer"] = views
+    if deletable is not None:
+        data["file_push"]["deletable_by_viewer"] = deletable
     elif user_config["expiration"]["deletable_by_viewer"] != "Not Set":
         data["file_push"]["deletable_by_viewer"] = user_config["expiration"][
             "deletable_by_viewer"
         ]
 
-    if retrieval_step:
-        data["file_push"]["retrieval_step"] = views
+    if retrieval_step is not None:
+        data["file_push"]["retrieval_step"] = retrieval_step
     elif user_config["expiration"]["retrieval_step"] != "Not Set":
         data["file_push"]["retrieval_step"] = user_config["expiration"][
             "retrieval_step"
@@ -308,9 +346,21 @@ def pushFile(
     if note:
         data["file_push"]["note"] = note
 
-    with open(payload, "rb") as fd:
-        upload_files = {"file_push[files][]": fd}
-        response = make_request("POST", path, upload_files=upload_files, post_data=data)
+    try:
+        with open(payload, "rb") as fd:
+            upload_files = {"file_push[files][]": fd}
+            response = make_request(
+                "POST", path, upload_files=upload_files, post_data=data
+            )
+    except FileNotFoundError:
+        rprint(f"[red]Error: File '{payload}' not found.[/red]")
+        raise typer.Exit(1)
+    except PermissionError:
+        rprint(f"[red]Error: Permission denied accessing file '{payload}'.[/red]")
+        raise typer.Exit(1)
+    except Exception as e:
+        rprint(f"[red]Error reading file '{payload}': {str(e)}[/red]")
+        raise typer.Exit(1)
 
     if response.status_code == 201:
         body = response.json()
@@ -486,48 +536,66 @@ def make_request(method, path, post_data=None, upload_files=None):
         auth_headers["X-User-Email"] = email
         auth_headers["X-User-Token"] = token
 
-    if method == "GET":
-        if debug:
-            rprint(f"Making GET request to {url + path} with headers {auth_headers}")
-        return requests.get(url + path, headers=auth_headers, timeout=30)
-    elif method == "POST":
-        if debug:
-            rprint(
-                f"Making JSON POST request to {url + path} with headers {auth_headers} body {post_data}"
+    try:
+        if method == "GET":
+            if debug:
+                rprint(
+                    f"Making GET request to {url + path} with headers {auth_headers}"
+                )
+            return requests.get(url + path, headers=auth_headers, timeout=30)
+        elif method == "POST":
+            if debug:
+                rprint(
+                    f"Making JSON POST request to {url + path} with headers {auth_headers} body {post_data}"
+                )
+                if upload_files is not None:
+                    rprint("Attaching a file to the upload")
+            return requests.post(
+                url + path,
+                headers=auth_headers,
+                json=post_data,
+                timeout=30,
+                files=upload_files,
             )
-            if upload_files is not None:
-                rprint("Attaching a file to the upload")
-        return requests.post(
-            url + path,
-            headers=auth_headers,
-            json=post_data,
-            timeout=30,
-            files=upload_files,
+        elif method == "DELETE":
+            if debug:
+                rprint(
+                    f"Making DELETE request to {url + path} with headers {auth_headers}"
+                )
+            return requests.delete(url + path, headers=auth_headers, timeout=5)
+    except requests.exceptions.Timeout:
+        rprint(
+            "[red]Error: Request timed out. Please check your connection and try again.[/red]"
         )
-    elif method == "DELETE":
-        if debug:
-            rprint(f"Making DELETE request to {url + path} with headers {auth_headers}")
-        return requests.delete(url + path, headers=auth_headers, timeout=5)
+        raise typer.Exit(1)
+    except requests.exceptions.ConnectionError:
+        rprint(
+            f"[red]Error: Could not connect to {url}. Please check the URL and your connection.[/red]"
+        )
+        raise typer.Exit(1)
+    except requests.exceptions.RequestException as e:
+        rprint(f"[red]Error: Network request failed: {str(e)}[/red]")
+        raise typer.Exit(1)
 
 
 def json_output() -> bool:
-    user_config_json = user_config["cli"]["json"].lower() in ["true", "yes", "on"]
-    return cli_options["json"] == True or user_config_json
+    user_config_json = parse_boolean(user_config["cli"]["json"])
+    return cli_options["json"] or user_config_json
 
 
 def verbose_output() -> bool:
-    user_config_verbose = user_config["cli"]["verbose"].lower() in ["true", "yes", "on"]
-    return cli_options["verbose"] == True or user_config_verbose
+    user_config_verbose = parse_boolean(user_config["cli"]["verbose"])
+    return cli_options["verbose"] or user_config_verbose
 
 
 def debug_output() -> bool:
-    user_config_debug = user_config["cli"]["debug"].lower() in ["true", "yes", "on"]
-    return cli_options["debug"] == True or user_config_debug
+    user_config_debug = parse_boolean(user_config["cli"]["debug"])
+    return cli_options["debug"] or user_config_debug
 
 
 def pretty_output() -> bool:
-    user_config_pretty = user_config["cli"]["debug"].lower() in ["true", "yes", "on"]
-    return cli_options["pretty"] == True or user_config_pretty
+    user_config_pretty = parse_boolean(user_config["cli"]["pretty"])
+    return cli_options["pretty"] or user_config_pretty
 
 
 app.add_typer(config.app, name="config", help="Show & modify CLI configuration.")
