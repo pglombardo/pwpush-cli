@@ -1705,14 +1705,14 @@ dev = ["black", "build", "mypy", "pytest", "pytest-cov", "setuptools", "tox", "t
 
 [[package]]
 name = "pyupgrade"
-version = "3.20.0"
+version = "3.21.0"
 description = "A tool to automatically upgrade syntax for newer versions."
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "pyupgrade-3.20.0-py2.py3-none-any.whl", hash = "sha256:cd5bf842b863f50adad324a01c30aef60b9f698a9814848094818659c92cd1f4"},
-    {file = "pyupgrade-3.20.0.tar.gz", hash = "sha256:dd6a16c13fc1a7db45796008689a9a35420bd364d681430f640c5e54a3d351ea"},
+    {file = "pyupgrade-3.21.0-py2.py3-none-any.whl", hash = "sha256:3a200cdc537980f371b4867f1d662e37166a7869d7713f309c1c3241c310c754"},
+    {file = "pyupgrade-3.21.0.tar.gz", hash = "sha256:3e63a882ec1d16f5621736d938952df3cdc2446501fb049e711415cb8d273960"},
 ]
 
 [package.dependencies]
@@ -2450,4 +2450,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9.2,<4.0"
-content-hash = "6e32290f70a125f927bd5c91155a214bfbf1c731f1c3cf8fd14ebb08b2ebf2de"
+content-hash = "5bdc32cec979ed3db5bfa4e90e1d10775bb9ae9e2e13295c0a10f33aaf55ab4a"
