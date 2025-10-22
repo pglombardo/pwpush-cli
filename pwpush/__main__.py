@@ -79,7 +79,7 @@ def show_welcome_screen() -> None:
     console.print(f"[dim]Version {version}[/dim]")
     console.print(f"[dim]Server: {user_config['instance']['url']}[/dim]")
     console.print(
-        f"[dim]Change server: [cyan]pwpush config set --key url --value <new-url>[/cyan][/dim]"
+        f"[dim]Change server: [cyan]pwpush config set url <new-url>[/cyan][/dim]"
     )
     console.print()
     console.print("[bold]Quick Start:[/bold]")
@@ -123,7 +123,7 @@ def show_help_with_config() -> None:
     console.print()
     console.print("[bold]Configuration:[/bold]")
     console.print(
-        "  [cyan]pwpush config set --key url --value <instance-url>[/cyan]  # Set Password Pusher instance"
+        "  [cyan]pwpush config set url <instance-url>[/cyan]  # Set Password Pusher instance"
     )
     console.print(
         "  [cyan]pwpush login[/cyan]                                        # Login to instance"

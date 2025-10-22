@@ -131,12 +131,52 @@ def show(
 
 @app.command()
 def set(
-    key: str = typer.Option(..., help="The key to set."),
-    value: str = typer.Option(..., help="The value to assign."),
+    key: str = typer.Argument(None, help="The key to set."),
+    value: str = typer.Argument(None, help="The value to assign."),
+    key_flag: str = typer.Option(
+        None, "--key", help="The key to set (alternative to positional argument)."
+    ),
+    value_flag: str = typer.Option(
+        None,
+        "--value",
+        help="The value to assign (alternative to positional argument).",
+    ),
 ) -> None:
     """
     Set a configuration value
+
+    Examples:
+        # Using positional arguments (recommended)
+        pwpush config set url https://pwpush.com
+        pwpush config set email user@example.com
+        pwpush config set expire_after_days 7
+
+        # Using flags (alternative)
+        pwpush config set --key url --value https://pwpush.com
+        pwpush config set --key email --value user@example.com
     """
+    # Determine which method was used and get the values
+    if key_flag is not None or value_flag is not None:
+        # Using flag-based approach
+        if key_flag is None or value_flag is None:
+            rprint(
+                "[red]Error: Both --key and --value must be provided when using flags.[/red]"
+            )
+            raise typer.Exit(1)
+        if key is not None or value is not None:
+            rprint(
+                "[red]Error: Cannot mix positional arguments with --key/--value flags.[/red]"
+            )
+            raise typer.Exit(1)
+        key = key_flag
+        value = value_flag
+    else:
+        # Using positional arguments
+        if key is None or value is None:
+            rprint("[red]Error: Both key and value must be provided.[/red]")
+            rprint("Usage: pwpush config set <key> <value>")
+            rprint("   or: pwpush config set --key <key> --value <value>")
+            raise typer.Exit(1)
     key = key.lower()
 
     found = False

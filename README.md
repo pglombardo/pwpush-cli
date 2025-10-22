@@ -27,7 +27,7 @@ The `pwpush` CLI is a powerful command-line tool that interfaces with [Password 
 Traditional communication tools create permanent digital footprints that can be exploited years later. Password Pusher sidesteps this by creating:
 
 - **Self-destructing shareable links** that auto-expire after a preset number of views
-- **Time-based expiration** that automatically deletes content after a set duration  
+- **Time-based expiration** that automatically deletes content after a set duration
 - **Zero permanent storage** - once expired, the information is completely removed
 - **Full audit trails** so you know exactly who accessed what and when
 
@@ -73,13 +73,13 @@ The CLI works with multiple Password Pusher instances:
 
 ```bash
 # Use the EU instance
-pwpush config set --key url --value https://eu.pwpush.com
+pwpush config set url https://eu.pwpush.com
 
-# Use the US instance  
-pwpush config set --key url --value https://us.pwpush.com
+# Use the US instance
+pwpush config set url https://us.pwpush.com
 
 # Use your own self-hosted instance
-pwpush config set --key url --value https://pwpush.yourdomain.com
+pwpush config set url https://pwpush.yourdomain.com
 ```
 
 ### 3. Authentication (Optional)
@@ -91,8 +91,8 @@ For advanced features like listing pushes and audit logs, authenticate with your
 pwpush login
 
 # Or set credentials manually
-pwpush config set --key email --value your@email.com
-pwpush config set --key token --value your_api_token
+pwpush config set email your@email.com
+pwpush config set token your_api_token
 ```
 
 Get your API token from: https://pwpush.com/en/users/token
@@ -144,11 +144,11 @@ pwpush expire <url_token>
 pwpush config show
 
 # Set default expiration settings
-pwpush config set --key expire_after_days --value 7
-pwpush config set --key expire_after_views --value 10
+pwpush config set expire_after_days 7
+pwpush config set expire_after_views 10
 
 # Enable JSON output by default
-pwpush config set --key json --value true
+pwpush config set json true
 
 # Logout and clear credentials
 pwpush logout

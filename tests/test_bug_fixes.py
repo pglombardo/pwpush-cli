@@ -107,6 +107,12 @@ def test_push_deletable_by_viewer_false():
 
 def test_push_deletable_by_viewer_none():
     """Test that deletable_by_viewer is not set when no flag is provided."""
+    # Reset config values to ensure clean test state
+    from pwpush.commands.config import user_config
+
+    user_config["expiration"]["deletable_by_viewer"] = "Not Set"
+    user_config["expiration"]["retrieval_step"] = "Not Set"
+
     with patch("pwpush.__main__.make_request") as mock_request, patch(
         "getpass.getpass"
     ) as mock_getpass:
@@ -207,6 +213,12 @@ def test_push_retrieval_step_false():
 
 def test_push_retrieval_step_none():
     """Test that retrieval_step is not set when no flag is provided."""
+    # Reset config values to ensure clean test state
+    from pwpush.commands.config import user_config
+
+    user_config["expiration"]["deletable_by_viewer"] = "Not Set"
+    user_config["expiration"]["retrieval_step"] = "Not Set"
+
     with patch("pwpush.__main__.make_request") as mock_request, patch(
         "getpass.getpass"
     ) as mock_getpass:
@@ -305,6 +317,12 @@ def test_push_file_deletable_by_viewer_false():
 
 def test_push_file_deletable_by_viewer_none():
     """Test that deletable_by_viewer is not set when no flag is provided in push-file."""
+    # Reset config values to ensure clean test state
+    from pwpush.commands.config import user_config
+
+    user_config["expiration"]["deletable_by_viewer"] = "Not Set"
+    user_config["expiration"]["retrieval_step"] = "Not Set"
+
     with patch("pwpush.__main__.make_request") as mock_request, patch(
         "builtins.open", create=True
     ) as mock_open:
@@ -406,6 +424,12 @@ def test_push_file_retrieval_step_false():
 
 def test_push_file_retrieval_step_none():
     """Test that retrieval_step is not set when no flag is provided in push-file."""
+    # Reset config values to ensure clean test state
+    from pwpush.commands.config import user_config
+
+    user_config["expiration"]["deletable_by_viewer"] = "Not Set"
+    user_config["expiration"]["retrieval_step"] = "Not Set"
+
     with patch("pwpush.__main__.make_request") as mock_request, patch(
         "builtins.open", create=True
     ) as mock_open:
