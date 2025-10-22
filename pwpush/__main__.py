@@ -111,6 +111,65 @@ def show_welcome_screen() -> None:
     console.print()
 
 
+def show_help_with_config() -> None:
+    """Display help with configuration information."""
+    console.print()
+    console.print("[bold blue]🔐 Password Pusher CLI[/bold blue]")
+    console.print(f"[dim]Version {version}[/dim]")
+    console.print()
+    console.print(
+        "Command Line Interface to Password Pusher - securely share passwords, secrets, and files with expiration controls."
+    )
+    console.print()
+    console.print("[bold]Configuration:[/bold]")
+    console.print(
+        "  [cyan]pwpush config set --key url --value <instance-url>[/cyan]  # Set Password Pusher instance"
+    )
+    console.print(
+        "  [cyan]pwpush login[/cyan]                                        # Login to instance"
+    )
+    console.print(
+        "  [cyan]pwpush config show[/cyan]                                  # View configuration"
+    )
+    console.print()
+    console.print("[bold]Examples:[/bold]")
+    console.print(
+        "  [cyan]pwpush push[/cyan]                    # Push a password (interactive)"
+    )
+    console.print(
+        "  [cyan]pwpush push --auto[/cyan]             # Auto-generate password"
+    )
+    console.print("  [cyan]pwpush push-file document.pdf[/cyan]  # Upload a file")
+    console.print(
+        "  [cyan]pwpush login[/cyan]                   # Login for advanced features"
+    )
+    console.print()
+    console.print("[bold]Available Commands:[/bold]")
+    console.print(
+        "  [cyan]login[/cyan]       Login to the registered Password Pusher instance"
+    )
+    console.print(
+        "  [cyan]logout[/cyan]      Log out from the registered Password Pusher instance"
+    )
+    console.print("  [cyan]push[/cyan]        Push a new password, secret note or text")
+    console.print("  [cyan]push-file[/cyan]   Push a new file")
+    console.print("  [cyan]expire[/cyan]      Expire a push")
+    console.print("  [cyan]audit[/cyan]       Show the audit log for the given push")
+    console.print("  [cyan]list[/cyan]        List active pushes (if logged in)")
+    console.print("  [cyan]config[/cyan]      Show & modify CLI configuration")
+    console.print()
+    console.print("[bold]Global Options:[/bold]")
+    console.print("  [cyan]--json, -j[/cyan]     Output results in JSON format")
+    console.print("  [cyan]--verbose, -v[/cyan]  Enable verbose output")
+    console.print("  [cyan]--pretty, -p[/cyan]   Format JSON output with indentation")
+    console.print("  [cyan]--debug, -d[/cyan]    Enable debug mode")
+    console.print("  [cyan]--help, -h[/cyan]     Show this help message")
+    console.print()
+    console.print("[bold]Need More Help?[/bold]")
+    console.print("  [cyan]pwpush <command> --help[/cyan]  # Help for specific command")
+    console.print()
+
+
 @app.callback(invoke_without_command=True)
 def load_cli_options(
     ctx: typer.Context,
@@ -138,6 +197,12 @@ def load_cli_options(
         "-d",
         help="Enable debug mode with detailed request/response information.",
     ),
+    help: bool = typer.Option(
+        False,
+        "--help",
+        "-h",
+        help="Show this message and exit.",
+    ),
 ) -> None:
     # CLI Args override configuration
     cli_options["json"] = parse_boolean(json)
@@ -147,7 +212,10 @@ def load_cli_options(
 
     # Show welcome screen if no command was provided
     if ctx.invoked_subcommand is None:
-        show_welcome_screen()
+        if help:
+            show_help_with_config()
+        else:
+            show_welcome_screen()
 
 
 @app.command()

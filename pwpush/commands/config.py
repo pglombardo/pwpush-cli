@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.table import Table
 
 from pwpush.options import json_output, save_config, user_config
+from pwpush.utils import mask_sensitive_value
 
 app = typer.Typer()
 
@@ -13,12 +14,31 @@ console = Console()
 
 
 @app.command()
-def show() -> None:
+def show(
+    json_output_flag: bool = typer.Option(
+        False,
+        "--json",
+        "-j",
+        help="Output results in JSON format instead of human-readable text.",
+    ),
+) -> None:
     """
     Show current configuration values
     """
-    if json_output():
-        print(json.dumps(user_config._sections))
+    # Check both the local flag and the global CLI options
+    from pwpush.options import cli_options
+
+    if json_output_flag or json_output() or cli_options.get("json", False):
+        # Create a copy of the config sections and mask sensitive values
+        config_data = {}
+        for section_name in user_config.sections():
+            config_data[section_name] = dict(user_config[section_name])
+            # Mask the token in the instance section
+            if section_name == "instance" and "token" in config_data[section_name]:
+                config_data[section_name]["token"] = mask_sensitive_value(
+                    config_data[section_name]["token"]
+                )
+        print(json.dumps(config_data))
     else:
         rprint()
         rprint("[bold]=== Instance Settings:[/bold]")
@@ -39,7 +59,7 @@ def show() -> None:
         )
         table.add_row(
             "token",
-            user_config["instance"]["token"],
+            mask_sensitive_value(user_config["instance"]["token"]),
             "API token from your account.  e.g. 'https://pwpush.com/en/users/token'",
         )
         console.print(table)
