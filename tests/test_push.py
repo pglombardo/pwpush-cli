@@ -5,7 +5,8 @@ import requests
 from typer.testing import CliRunner
 
 import pwpush
-from pwpush.__main__ import app, generate_password, genpass
+from pwpush.__main__ import app, generate_secret, genpass
+from pwpush.utils import check_secret_conditions
 
 # import the mocks
 from tests import *
@@ -76,12 +77,12 @@ def test_genpass():
     assert pw
 
 
-def test_create_password():
-    pw1 = generate_password(20)
-    assert len(pw1) == 20
+def test_create_secret():
+    pw1 = generate_secret(20)
+    assert check_secret_conditions(pw1, length=20)
 
-    pw2 = generate_password()
-    assert len(pw2) == 50
+    pw2 = generate_secret()
+    assert check_secret_conditions(pw2, length=50)
 
 
 def test_push_with_kind_url(mock_make_request):

@@ -16,7 +16,7 @@ from pwpush import version
 from pwpush.commands import config
 from pwpush.commands.config import save_config, user_config
 from pwpush.options import cli_options
-from pwpush.utils import parse_boolean
+from pwpush.utils import parse_boolean, check_secret_conditions
 
 
 class Color(str, Enum):
@@ -58,11 +58,18 @@ def genpass(length=5):
     return pw
 
 
-def generate_password(length=50):
+def generate_secret(length=50):
     """Generate a secure random password"""
     characters = string.ascii_letters + string.digits + string.punctuation
-    password = "".join(secrets.choice(characters) for _ in range(length))
-    return password
+    attempts = 0
+    while True:
+        #print(attempts)
+        secret = "".join(secrets.choice(characters) for _ in range(length))
+        if check_secret_conditions(secret, length=length):
+            return secret
+        attempts += 1
+
+    return secret
 
 
 def version_callback(print_version: bool) -> None:
