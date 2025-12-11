@@ -335,7 +335,7 @@ def push(
     data["password"]["kind"] = kind
 
     if auto:
-        secret = generate_password(50)
+        secret = generate_secret(50)
         passphrase = genpass(2)
 
     if not secret:
