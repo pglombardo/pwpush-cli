@@ -1,5 +1,5 @@
 """Utility functions for the pwpush CLI."""
-
+import string
 
 def mask_sensitive_value(value: str, visible_chars: int = 4) -> str:
     """Mask sensitive values like API tokens with asterisks.
@@ -54,3 +54,25 @@ def parse_boolean(value: bool | str | None) -> bool:
     if isinstance(value, str):
         return value.lower() in ["true", "yes", "on", "1"]
     return False
+
+
+def check_secret_conditions(secret: str, punctuation: bool = True, upper: bool = True, digit: bool=True, lower: bool = True, length: int = 20) -> bool:
+    """check if a secret meets conditions"""
+    conditions = []
+    
+    if punctuation:
+        conditions.append(s in string.punctuation for s in secret)
+    if lower:
+        conditions.append(any(s.islower() for s in secret))
+    if upper:
+        conditions.append(any(s.isupper() for s in secret))
+    if digit:
+        conditions.append(any(s.isdigit() for s in secret))
+    if length:
+        conditions.append(len(secret) == length)
+
+    if all(conditions):
+        return True
+    else:
+        print(f"{secret} does not pass all conditions")
+        return False
