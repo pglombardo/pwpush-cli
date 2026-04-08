@@ -36,7 +36,7 @@ pwpush/
 
 ### Security
 - **Bandit** security linting required
-- **Safety** dependency vulnerability scanning
+- **pip-audit** dependency vulnerability scanning (OSV/PyPI; no cloud account)
 - Never log or expose sensitive data (passwords, tokens, secrets)
 - Use `hide_input=True` for password prompts
 - Validate all user inputs
