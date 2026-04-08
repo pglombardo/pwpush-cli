@@ -39,9 +39,10 @@ def test_parse_boolean():
 
 def test_push_deletable_by_viewer_true():
     """Test that deletable_by_viewer is set to True when --deletable is used."""
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "getpass.getpass"
-    ) as mock_getpass:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("getpass.getpass") as mock_getpass,
+    ):
 
         # Mock getpass to avoid interactive prompts
         mock_getpass.return_value = ""
@@ -73,9 +74,10 @@ def test_push_deletable_by_viewer_true():
 
 def test_push_deletable_by_viewer_false():
     """Test that deletable_by_viewer is set to False when --no-deletable is used."""
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "getpass.getpass"
-    ) as mock_getpass:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("getpass.getpass") as mock_getpass,
+    ):
 
         # Mock getpass to avoid interactive prompts
         mock_getpass.return_value = ""
@@ -113,9 +115,10 @@ def test_push_deletable_by_viewer_none():
     user_config["expiration"]["deletable_by_viewer"] = "Not Set"
     user_config["expiration"]["retrieval_step"] = "Not Set"
 
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "getpass.getpass"
-    ) as mock_getpass:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("getpass.getpass") as mock_getpass,
+    ):
 
         # Mock getpass to avoid interactive prompts
         mock_getpass.return_value = ""
@@ -145,9 +148,10 @@ def test_push_deletable_by_viewer_none():
 
 def test_push_retrieval_step_true():
     """Test that retrieval_step is set to True when --retrieval-step is used."""
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "getpass.getpass"
-    ) as mock_getpass:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("getpass.getpass") as mock_getpass,
+    ):
 
         # Mock getpass to avoid interactive prompts
         mock_getpass.return_value = ""
@@ -179,9 +183,10 @@ def test_push_retrieval_step_true():
 
 def test_push_retrieval_step_false():
     """Test that retrieval_step is set to False when --no-retrieval-step is used."""
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "getpass.getpass"
-    ) as mock_getpass:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("getpass.getpass") as mock_getpass,
+    ):
 
         # Mock getpass to avoid interactive prompts
         mock_getpass.return_value = ""
@@ -219,9 +224,10 @@ def test_push_retrieval_step_none():
     user_config["expiration"]["deletable_by_viewer"] = "Not Set"
     user_config["expiration"]["retrieval_step"] = "Not Set"
 
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "getpass.getpass"
-    ) as mock_getpass:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("getpass.getpass") as mock_getpass,
+    ):
 
         # Mock getpass to avoid interactive prompts
         mock_getpass.return_value = ""
@@ -251,9 +257,10 @@ def test_push_retrieval_step_none():
 
 def test_push_file_deletable_by_viewer_true():
     """Test that deletable_by_viewer is set to True when --deletable is used in push-file."""
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "builtins.open", create=True
-    ) as mock_open:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("builtins.open", create=True) as mock_open,
+    ):
 
         # Mock file content
         mock_file = MagicMock()
@@ -284,9 +291,10 @@ def test_push_file_deletable_by_viewer_true():
 
 def test_push_file_deletable_by_viewer_false():
     """Test that deletable_by_viewer is set to False when --no-deletable is used in push-file."""
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "builtins.open", create=True
-    ) as mock_open:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("builtins.open", create=True) as mock_open,
+    ):
 
         # Mock file content
         mock_file = MagicMock()
@@ -323,9 +331,10 @@ def test_push_file_deletable_by_viewer_none():
     user_config["expiration"]["deletable_by_viewer"] = "Not Set"
     user_config["expiration"]["retrieval_step"] = "Not Set"
 
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "builtins.open", create=True
-    ) as mock_open:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("builtins.open", create=True) as mock_open,
+    ):
 
         # Mock file content
         mock_file = MagicMock()
@@ -356,9 +365,10 @@ def test_push_file_deletable_by_viewer_none():
 
 def test_push_file_retrieval_step_true():
     """Test that retrieval_step is set to True when --retrieval-step is used in push-file."""
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "builtins.open", create=True
-    ) as mock_open:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("builtins.open", create=True) as mock_open,
+    ):
 
         # Mock file content
         mock_file = MagicMock()
@@ -389,9 +399,10 @@ def test_push_file_retrieval_step_true():
 
 def test_push_file_retrieval_step_false():
     """Test that retrieval_step is set to False when --no-retrieval-step is used in push-file."""
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "builtins.open", create=True
-    ) as mock_open:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("builtins.open", create=True) as mock_open,
+    ):
 
         # Mock file content
         mock_file = MagicMock()
@@ -430,9 +441,10 @@ def test_push_file_retrieval_step_none():
     user_config["expiration"]["deletable_by_viewer"] = "Not Set"
     user_config["expiration"]["retrieval_step"] = "Not Set"
 
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "builtins.open", create=True
-    ) as mock_open:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("builtins.open", create=True) as mock_open,
+    ):
 
         # Mock file content
         mock_file = MagicMock()
@@ -485,9 +497,10 @@ def test_file_not_found_error_handling():
 
 def test_network_error_handling():
     """Test that network errors are handled properly."""
-    with patch("pwpush.__main__.make_request") as mock_request, patch(
-        "getpass.getpass"
-    ) as mock_getpass:
+    with (
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("getpass.getpass") as mock_getpass,
+    ):
 
         # Mock getpass to avoid interactive prompts
         mock_getpass.return_value = ""
