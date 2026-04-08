@@ -47,7 +47,7 @@ Traditional communication tools create permanent digital footprints that can be 
 pip install pwpush
 ```
 
-**Requirements**: Python 3.9.2 or higher
+**Requirements**: Python 3.10 or higher
 
 ## Quick Start
 

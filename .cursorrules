@@ -4,7 +4,7 @@
 This is a Python CLI tool for Password Pusher - a secure password sharing service. The CLI allows users to push passwords, secrets, and files with expiration controls to Password Pusher instances.
 
 ## Key Technologies & Dependencies
-- **Python 3.9.2+** (minimum requirement)
+- **Python 3.10+** (minimum requirement)
 - **Typer** - CLI framework with rich output
 - **Rich** - Beautiful terminal output with tables and formatting
 - **Requests** - HTTP client for API communication
