@@ -38,8 +38,6 @@ jobs:
       run: |
         make test
 
-    - name: Run safety checks
-      env:
-        SAFETY_API_KEY: ${{ secrets.SAFETY_API_TOKEN }}
+    - name: Run security checks
       run: |
         make check-safety
