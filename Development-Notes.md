@@ -119,7 +119,7 @@ Articles:
 - [`Poetry`](https://python-poetry.org/) as the dependencies manager. See configuration in [`pyproject.toml`](https://github.com/pglombardo/pwpush-cli/blob/master/pyproject.toml) and [`setup.cfg`](https://github.com/pglombardo/pwpush-cli/blob/master/setup.cfg).
 - Automatic codestyle with [`black`](https://github.com/psf/black), [`isort`](https://github.com/timothycrosley/isort) and [`pyupgrade`](https://github.com/asottile/pyupgrade).
 - Ready-to-use [`pre-commit`](https://pre-commit.com/) hooks with code-formatting.
-- Type checks with [`mypy`](https://mypy.readthedocs.io); docstring checks with [`darglint`](https://github.com/terrencepreilly/darglint); security checks with [`safety`](https://github.com/pyupio/safety) and [`bandit`](https://github.com/PyCQA/bandit)
+- Type checks with [`mypy`](https://mypy.readthedocs.io); docstring checks with [`darglint`](https://github.com/terrencepreilly/darglint); dependency audits with [`pip-audit`](https://github.com/pypa/pip-audit) and code security with [`bandit`](https://github.com/PyCQA/bandit)
 - Testing with [`pytest`](https://docs.pytest.org/en/latest/).
 - Ready-to-use [`.editorconfig`](https://github.com/pglombardo/pwpush-cli/blob/master/.editorconfig), [`.dockerignore`](https://github.com/pglombardo/pwpush/blob/master/.dockerignore), and [`.gitignore`](https://github.com/pglombardo/pwpush-cli/blob/master/.gitignore). You don't have to worry about those things.
 
@@ -234,7 +234,7 @@ make check-codestyle
 make check-safety
 ```
 
-This command launches `Poetry` integrity checks as well as identifies security issues with `Safety` and `Bandit`.
+This command launches `Poetry` integrity checks, dependency vulnerability audits with `pip-audit`, and static analysis with `Bandit`.
 
 ```bash
 make check-safety

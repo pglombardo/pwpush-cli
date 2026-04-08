@@ -2,11 +2,7 @@
 """Command Line Interface to Password Pusher - secure information distribution with automatic expiration controls."""
 
 import sys
-
-if sys.version_info >= (3, 8):
-    from importlib import metadata as importlib_metadata
-else:
-    import importlib_metadata
+from importlib import metadata as importlib_metadata
 
 
 def get_version() -> str:
