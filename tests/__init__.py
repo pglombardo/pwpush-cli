@@ -49,7 +49,7 @@ def mock_create_password():
 @pytest.fixture
 def mock_generate_password():
     with patch(
-        "pwpush.__main__.generate_password", return_value="auto_generated_password"
+        "pwpush.__main__.generate_secret", return_value="auto_generated_password"
     ) as mock:
         yield mock
 
