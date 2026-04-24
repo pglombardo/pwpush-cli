@@ -62,6 +62,16 @@ def show(
             mask_sensitive_value(user_config["instance"]["token"]),
             "API token from your account.  e.g. 'https://pwpush.com/en/users/token'",
         )
+        table.add_row(
+            "api_profile",
+            user_config["instance"]["api_profile"],
+            "Cached API profile detected for this instance (v2/legacy).",
+        )
+        table.add_row(
+            "api_profile_ttl_seconds",
+            user_config["instance"]["api_profile_ttl_seconds"],
+            "How long to trust cached API profile before probing again.",
+        )
         console.print(table)
 
         rprint()

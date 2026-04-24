@@ -2,10 +2,9 @@
 import getpass
 import secrets
 import string
+import time
 from enum import Enum
-from urllib.parse import urljoin
 
-import requests
 import typer
 from dateutil import parser
 from rich import print as rprint
@@ -14,6 +13,19 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from pwpush import version
+from pwpush.api.capabilities import detect_api_profile
+from pwpush.api.client import normalize_base_url, send_request
+from pwpush.api.endpoints import (
+    adapt_file_payload_for_profile,
+    adapt_file_uploads_for_profile,
+    adapt_text_payload_for_profile,
+    normalize_audit_events,
+    push_audit_path,
+    push_create_path,
+    push_expire_path,
+    push_preview_path,
+    validation_paths,
+)
 from pwpush.commands import config
 from pwpush.commands.config import save_config, user_config
 from pwpush.options import cli_options
@@ -178,6 +190,56 @@ def show_help_with_config() -> None:
     console.print()
 
 
+def current_api_profile(
+    *, base_url: str | None = None, email: str | None = None, token: str | None = None
+) -> str:
+    """Resolve API profile for current or provided credentials."""
+    resolved_base_url = normalize_base_url(base_url or user_config["instance"]["url"])
+    resolved_email = email or user_config["instance"]["email"]
+    resolved_token = token or user_config["instance"]["token"]
+
+    instance_settings = user_config["instance"]
+    configured_base_url = normalize_base_url(instance_settings["url"])
+    persisted_profile = instance_settings.get("api_profile", "Not Set")
+
+    try:
+        persisted_checked_at = int(instance_settings.get("api_profile_checked_at", "0"))
+    except ValueError:
+        persisted_checked_at = 0
+
+    try:
+        ttl_seconds = int(instance_settings.get("api_profile_ttl_seconds", "3600"))
+    except ValueError:
+        ttl_seconds = 3600
+    ttl_seconds = max(ttl_seconds, 0)
+
+    now = int(time.time())
+    within_ttl = (now - persisted_checked_at) < ttl_seconds
+    can_use_persisted = (
+        resolved_base_url == configured_base_url
+        and persisted_profile in ("v2", "legacy")
+        and persisted_checked_at > 0
+        and within_ttl
+    )
+
+    if can_use_persisted:
+        return persisted_profile
+
+    detected_profile = detect_api_profile(
+        base_url=resolved_base_url,
+        email=resolved_email,
+        token=resolved_token,
+        debug=debug_output(),
+    )
+
+    if resolved_base_url == configured_base_url:
+        instance_settings["api_profile"] = detected_profile
+        instance_settings["api_profile_checked_at"] = str(now)
+        save_config()
+
+    return detected_profile
+
+
 @app.callback(invoke_without_command=True)
 def load_cli_options(
     ctx: typer.Context,
@@ -240,25 +302,20 @@ def login(
 
     After login, you can use commands like 'list', 'audit', and 'expire'.
     """
-    normalized_url = url.rstrip("/")
-    auth_headers = {
-        "X-User-Email": email,
-        "X-User-Token": token,
-        "Authorization": f"Bearer {token}",
-    }
-    validation_paths = ["/p/active.json", "/api/v2/pushes/active", "/en/d/active"]
+    normalized_url = normalize_base_url(url)
+    api_profile = current_api_profile(base_url=normalized_url, email=email, token=token)
+    candidate_paths = validation_paths(api_profile)
     r = None
 
-    for path in validation_paths:
-        try:
-            response = requests.get(
-                urljoin(normalized_url + "/", path.lstrip("/")),
-                headers=auth_headers,
-                timeout=5,
-            )
-        except requests.exceptions.RequestException:
-            continue
-
+    for path in candidate_paths:
+        response = make_request(
+            "GET",
+            path,
+            base_url=normalized_url,
+            email=email,
+            token=token,
+            timeout=5,
+        )
         # Keep searching when an endpoint doesn't exist on this server.
         if response.status_code == 404:
             continue
@@ -276,6 +333,8 @@ def login(
         user_config["instance"]["url"] = normalized_url
         user_config["instance"]["email"] = email
         user_config["instance"]["token"] = token
+        user_config["instance"]["api_profile"] = api_profile
+        user_config["instance"]["api_profile_checked_at"] = str(int(time.time()))
         save_config()
         rprint()
         rprint("Login successful.  Credentials saved.")
@@ -350,9 +409,8 @@ def push(
         pwpush push --secret "data" --passphrase "pass"  # With passphrase
         pwpush push --secret "data" --prompt-passphrase  # Prompt for passphrase
     """
-    path = "/p.json"
-
     data = {"password": {}}
+    api_profile = current_api_profile()
 
     # Validate kind parameter
     valid_kinds = ["text", "url", "qr"]
@@ -440,12 +498,14 @@ def push(
     ) as progress:
         progress.add_task(description="Processing...", total=None)
 
-        response = make_request("POST", path, post_data=data)
+        create_path = push_create_path(api_profile, kind)
+        request_data = adapt_text_payload_for_profile(data, api_profile)
+        response = make_request("POST", create_path, post_data=request_data)
 
         if response.status_code == 201:
             body = response.json()
-            path = f'/p/{body["url_token"]}/preview.json'
-            response = make_request("GET", path)
+            preview_path = push_preview_path(api_profile, body["url_token"], kind)
+            response = make_request("GET", preview_path)
 
             body = response.json()
             if json_output():
@@ -489,7 +549,7 @@ def pushFile(
         pwpush push-file config.json --retrieval-step   # Require click-through
         pwpush push-file backup.zip --days 7 --views 5  # Custom expiration
     """
-    path = "/f.json"
+    api_profile = current_api_profile()
 
     data = {"file_push": {}}
     data["file_push"]["payload"] = ""
@@ -530,8 +590,14 @@ def pushFile(
     try:
         with open(payload, "rb") as fd:
             upload_files = {"file_push[files][]": fd}
+            create_path = push_create_path(api_profile, "file")
+            request_data = adapt_file_payload_for_profile(data, api_profile)
+            request_files = adapt_file_uploads_for_profile(upload_files, api_profile)
             response = make_request(
-                "POST", path, upload_files=upload_files, post_data=data
+                "POST",
+                create_path,
+                upload_files=request_files,
+                post_data=request_data,
             )
     except FileNotFoundError:
         rprint(f"[red]Error: File '{payload}' not found.[/red]")
@@ -545,8 +611,8 @@ def pushFile(
 
     if response.status_code == 201:
         body = response.json()
-        path = f'/f/{body["url_token"]}/preview.json'
-        response = make_request("GET", path)
+        preview_path = push_preview_path(api_profile, body["url_token"], "file")
+        response = make_request("GET", preview_path)
 
         body = response.json()
         if json_output():
@@ -568,7 +634,7 @@ def expire(
     """
     Expire a push.
     """
-    path = f"/p/{url_token}.json"
+    path = push_expire_path(current_api_profile(), url_token)
 
     response = make_request("DELETE", path)
 
@@ -596,7 +662,7 @@ def audit(
         rprint("You must log into an instance first.")
         raise typer.Exit(1)
 
-    path = f"/p/{url_token}/audit.json"
+    path = push_audit_path(current_api_profile(), url_token)
 
     response = make_request("GET", path)
 
@@ -614,26 +680,14 @@ def audit(
                 "IP", "User Agent", "Referrer", "Successful", "When", "Operation"
             )
 
-            for v in body["views"]:
-                if v["referrer"] == "":
-                    v["referrer"] = "None"
-
-                if v["kind"] == 0:
-                    v["kind"] = "View"
-                elif v["kind"] == 1:
-                    v["kind"] = "Manual Deletion"
-
-                v["created_at"] = parser.isoparse(v["created_at"]).strftime(
-                    "%m/%d/%Y, %H:%M:%S UTC"
-                )
-
+            for event in normalize_audit_events(body):
                 table.add_row(
-                    v["ip"],
-                    v["user_agent"],
-                    v["referrer"],
-                    str(v["successful"]),
-                    v["created_at"],
-                    v["kind"],
+                    event["ip"],
+                    event["user_agent"],
+                    event["referrer"],
+                    event["successful"],
+                    event["created_at"],
+                    event["kind"],
                 )
 
             console.print(table)
@@ -652,11 +706,7 @@ def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) 
         rprint("You must log into an instance first.")
         raise typer.Exit(1)
 
-    paths = (
-        ["/p/expired.json", "/api/v2/pushes/expired", "/en/d/expired.json"]
-        if expired
-        else ["/p/active.json", "/api/v2/pushes/active", "/en/d/active.json"]
-    )
+    paths = validation_paths(current_api_profile(), expired=expired)
     r = None
     for path in paths:
         response = make_request("GET", path)
@@ -712,66 +762,31 @@ def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) 
         rprint(r.text)
 
 
-def make_request(method, path, post_data=None, upload_files=None):
-    debug = debug_output()
-
-    url = user_config["instance"]["url"]
-    email = user_config["instance"]["email"]
-    token = user_config["instance"]["token"]
-
-    if debug:
-        rprint(f"Communicating with {url} as user {email}")
-
-    auth_headers = {}
-
-    valid_email = email != "Not Set"
-    valid_token = token != "Not Set"
-
-    if valid_email and valid_token:
-        auth_headers["X-User-Email"] = email
-        auth_headers["X-User-Token"] = token
-        auth_headers["Authorization"] = f"Bearer {token}"
-
-    try:
-        if method == "GET":
-            if debug:
-                rprint(
-                    f"Making GET request to {url + path} with headers {auth_headers}"
-                )
-            return requests.get(url + path, headers=auth_headers, timeout=30)
-        elif method == "POST":
-            if debug:
-                rprint(
-                    f"Making JSON POST request to {url + path} with headers {auth_headers} body {post_data}"
-                )
-                if upload_files is not None:
-                    rprint("Attaching a file to the upload")
-            return requests.post(
-                url + path,
-                headers=auth_headers,
-                json=post_data,
-                timeout=30,
-                files=upload_files,
-            )
-        elif method == "DELETE":
-            if debug:
-                rprint(
-                    f"Making DELETE request to {url + path} with headers {auth_headers}"
-                )
-            return requests.delete(url + path, headers=auth_headers, timeout=5)
-    except requests.exceptions.Timeout:
-        rprint(
-            "[red]Error: Request timed out. Please check your connection and try again.[/red]"
-        )
-        raise typer.Exit(1)
-    except requests.exceptions.ConnectionError:
-        rprint(
-            f"[red]Error: Could not connect to {url}. Please check the URL and your connection.[/red]"
-        )
-        raise typer.Exit(1)
-    except requests.exceptions.RequestException as e:
-        rprint(f"[red]Error: Network request failed: {str(e)}[/red]")
-        raise typer.Exit(1)
+def make_request(
+    method,
+    path,
+    post_data=None,
+    upload_files=None,
+    *,
+    base_url=None,
+    email=None,
+    token=None,
+    timeout=None,
+):
+    request_timeout = (
+        timeout if timeout is not None else (5 if method == "DELETE" else 30)
+    )
+    return send_request(
+        method,
+        base_url=base_url or user_config["instance"]["url"],
+        path=path,
+        email=email or user_config["instance"]["email"],
+        token=token or user_config["instance"]["token"],
+        post_data=post_data,
+        upload_files=upload_files,
+        timeout=request_timeout,
+        debug=debug_output(),
+    )
 
 
 def json_output() -> bool:

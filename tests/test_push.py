@@ -43,9 +43,10 @@ def test_basic_push_passphrase(monkeypatch):
         build_request_mock({"url": "https://pwpush.test/en/p/text-password-url"}),
     )
 
-    result = runner.invoke(
-        app, ["push", "--secret", "mypassword", "--passphrase", "hello"]
-    )
+    with patch("pwpush.__main__.current_api_profile", return_value="legacy"):
+        result = runner.invoke(
+            app, ["push", "--secret", "mypassword", "--passphrase", "hello"]
+        )
     print(result)
     assert result.exit_code == 0
     assert "https://pwpush.test/en/p/text-password-url\n" in result.stdout
@@ -61,7 +62,8 @@ def test_file_push(monkeypatch):
         build_request_mock({"url": "https://pwpush.test/en/f/secret-file-url"}),
     )
 
-    result = runner.invoke(app, ["push-file", "./README.md"])
+    with patch("pwpush.__main__.current_api_profile", return_value="legacy"):
+        result = runner.invoke(app, ["push-file", "./README.md"])
     assert result.exit_code == 0
     assert "https://pwpush.test/en/f/secret-file-url\n" == result.stdout
 

@@ -15,6 +15,9 @@ default_config = {"instance": {}}
 default_config["instance"]["url"] = "https://eu.pwpush.com"
 default_config["instance"]["email"] = "Not Set"
 default_config["instance"]["token"] = "Not Set"
+default_config["instance"]["api_profile"] = "Not Set"
+default_config["instance"]["api_profile_checked_at"] = "0"
+default_config["instance"]["api_profile_ttl_seconds"] = "3600"
 
 default_config["expiration"] = {
     "expire_after_days": "Not Set",
