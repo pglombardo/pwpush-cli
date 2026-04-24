@@ -165,7 +165,22 @@ def test_help_does_not_prompt_or_create_config(monkeypatch, tmp_path):
 
     assert result.exit_code == 0
     assert "Run the setup wizard" not in result.stdout
+    assert "pwpush config wizard" in result.stdout
+    assert "Recommended: guided setup/update" in result.stdout
+    assert "Advanced: direct config edit" in result.stdout
     assert "Available Commands" in result.stdout
+    assert not config_file.exists()
+
+
+def test_config_help_promotes_wizard_before_direct_edits(monkeypatch, tmp_path):
+    config_file = tmp_path / "config.ini"
+    reset_config_file(monkeypatch, config_file)
+
+    result = runner.invoke(app, ["config", "--help"])
+
+    assert result.exit_code == 0
+    assert "Run the guided setup wizard" in result.stdout
+    assert "Directly set a configuration value" in result.stdout
     assert not config_file.exists()
 
 

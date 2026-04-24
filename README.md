@@ -66,7 +66,19 @@ pip install pwpush
 
 ## Quick Start
 
-### 1. Basic Usage (Anonymous)
+### 1. Guided Setup
+
+Run the setup wizard to choose your Password Pusher instance, optionally add an
+API token, and set default expiration/output preferences:
+
+```bash
+pwpush config wizard
+```
+
+On first run, `pwpush` will also offer to launch this wizard automatically if no
+local configuration file exists.
+
+### 2. Basic Usage
 
 ```bash
 # Push a password (interactive mode)
@@ -82,22 +94,21 @@ pwpush push --auto
 pwpush push --secret "mypassword" --days 7 --views 5
 ```
 
-### 2. Configure Your Instance
+### 3. Configure Your Instance
 
 The CLI works with multiple Password Pusher instances:
 
 ```bash
-# Use the EU instance
+# Recommended: guided setup/update
+pwpush config wizard
+
+# Advanced: direct configuration edits
 pwpush config set url https://eu.pwpush.com
-
-# Use the US instance
 pwpush config set url https://us.pwpush.com
-
-# Use your own self-hosted instance
 pwpush config set url https://pwpush.yourdomain.com
 ```
 
-### 3. Authentication (Optional)
+### 4. Authentication (Optional)
 
 For advanced features like listing pushes and audit logs, authenticate with your account:
 
@@ -155,10 +166,13 @@ pwpush expire <url_token>
 ### Configuration
 
 ```bash
+# Guided setup/update (recommended)
+pwpush config wizard
+
 # View current configuration
 pwpush config
 
-# Set default expiration settings
+# Advanced: set default expiration settings directly
 pwpush config set expire_after_days 7
 pwpush config set expire_after_views 10
 

@@ -15,7 +15,10 @@ from pwpush.options import (
 )
 from pwpush.utils import mask_sensitive_value
 
-app = typer.Typer()
+app = typer.Typer(
+    rich_markup_mode="markdown",
+    context_settings=dict(help_option_names=["-h", "--help"]),
+)
 __all__ = ["app", "user_config"]
 
 console = Console()
@@ -25,6 +28,8 @@ console = Console()
 def config_commands(ctx: typer.Context) -> None:
     """
     Show configuration when no subcommand is provided.
+
+    Run `pwpush config wizard` for guided setup.
     """
     if ctx.invoked_subcommand is None:
         show()
@@ -33,7 +38,10 @@ def config_commands(ctx: typer.Context) -> None:
 @app.command()
 def wizard() -> None:
     """
-    Run the interactive configuration wizard.
+    Run the guided setup wizard.
+
+    This is the recommended way to choose your Password Pusher instance, add an
+    API token, and set default expiration/output preferences.
     """
     run_config_wizard()
     raise typer.Exit(code=0)
@@ -42,7 +50,7 @@ def wizard() -> None:
 @app.command()
 def init() -> None:
     """
-    Run the interactive configuration wizard.
+    Alias for `pwpush config wizard`.
     """
     run_config_wizard()
     raise typer.Exit(code=0)
@@ -58,7 +66,7 @@ def show(
     ),
 ) -> None:
     """
-    Show current configuration values
+    Show current configuration values.
     """
     # Check both the local flag and the global CLI options
     from pwpush.options import cli_options
@@ -167,7 +175,8 @@ def show(
         console.print(table)
 
         rprint()
-        rprint("To change the above the values see: 'pwpush config set --help'")
+        rprint("To update these values, run 'pwpush config wizard'.")
+        rprint("For direct edits, see 'pwpush config set --help'.")
         rprint()
         rprint("User config is saved in '%s/config.ini'" % typer.get_app_dir("pwpush"))
         rprint()
@@ -188,17 +197,10 @@ def set(
     ),
 ) -> None:
     """
-    Set a configuration value
+    Directly set a configuration value.
 
-    Examples:
-        # Using positional arguments (recommended)
-        pwpush config set url https://pwpush.com
-        pwpush config set email user@example.com
-        pwpush config set expire_after_days 7
-
-        # Using flags (alternative)
-        pwpush config set --key url --value https://pwpush.com
-        pwpush config set --key email --value user@example.com
+    Most users should run `pwpush config wizard` for guided setup. Use this
+    command when you know the exact config key to change.
     """
     # Determine which method was used and get the values
     if key_flag is not None or value_flag is not None:
@@ -245,7 +247,7 @@ def unset(
     key: str = typer.Option(..., help="The key to unset."),
 ) -> None:
     """
-    Unset a configuration value
+    Directly unset a configuration value.
     """
     found = False
     for section in user_config.sections():
