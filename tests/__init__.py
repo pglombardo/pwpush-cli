@@ -24,6 +24,10 @@ def mock_make_request():
     with (
         patch("pwpush.__main__.current_api_profile", return_value="legacy"),
         patch("pwpush.__main__.make_request") as mock,
+        patch(
+            "pwpush.__main__.detect_api_capabilities",
+            return_value={"api_version": None, "features": {}},
+        ),
     ):
         mock.return_value.status_code = 201
         mock.return_value.json.return_value = {

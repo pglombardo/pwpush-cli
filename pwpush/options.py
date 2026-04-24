@@ -33,6 +33,11 @@ default_config["cli"] = {
     "debug": "False",
 }
 
+default_config["pro"] = {
+    "notify": "Not Set",
+    "notify_locale": "Not Set",
+}
+
 
 def config_file_exists() -> bool:
     """
@@ -71,6 +76,9 @@ def validate_user_config() -> bool:
         changed = True
     if "cli" not in user_config:
         user_config["cli"] = {}
+        changed = True
+    if "pro" not in user_config:
+        user_config["pro"] = {}
         changed = True
 
     for section, defaults in default_config.items():

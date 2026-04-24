@@ -188,6 +188,26 @@ pwpush logout
 
 ## Advanced Usage
 
+### Pro Features (pwpush.com)
+
+Password Pusher Pro supports email notifications when pushes are accessed. This feature requires authentication and is automatically detected from your instance's capabilities.
+
+```bash
+# Notify specific emails when the push is accessed (requires login)
+pwpush push --secret "password123" --notify "admin@company.com,security@company.com"
+
+# Set locale for notification emails
+pwpush push --secret "password123" --notify "admin@company.com" --notify-locale "en"
+
+# File push with notifications
+pwpush push-file document.pdf --notify "admin@company.com"
+```
+
+**Requirements:**
+- Authentication required (API token must be set via `pwpush login`)
+- API version 2.1 or higher
+- The `email_auto_dispatch` feature enabled on your instance
+
 ### Push Types
 
 The `--kind` parameter allows you to specify the type of content being pushed:
@@ -258,6 +278,15 @@ done
 |-----|-------------|--------------|
 | `json` | Output in JSON format | true/false |
 | `verbose` | Enable verbose output | true/false |
+
+### Pro Settings
+
+| Key | Description | Valid Values |
+|-----|-------------|--------------|
+| `notify` | Default email addresses for notifications | Comma-separated emails |
+| `notify_locale` | Default locale for notification emails | `en`, `es`, `fr`, `de`, etc. |
+
+**Note:** These settings require a Password Pusher Pro instance with email notifications enabled.
 
 ## Examples
 
