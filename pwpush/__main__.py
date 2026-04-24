@@ -48,7 +48,7 @@ app = typer.Typer(
     name="pwpush",
     help="Command Line Interface to Password Pusher - securely share passwords, secrets, and files with expiration controls.",
     add_completion=False,
-    rich_markup_mode="markdown",
+    rich_markup_mode="rich",
     pretty_exceptions_show_locals=False,
     context_settings=dict(help_option_names=["-h", "--help"]),
 )
@@ -100,10 +100,11 @@ def show_welcome_screen() -> None:
     console.print(f"[dim]Version {version}[/dim]")
     console.print(f"[dim]Server: {user_config['instance']['url']}[/dim]")
     console.print(
-        f"[dim]Change server: [cyan]pwpush config set url <new-url>[/cyan][/dim]"
+        "[dim]Setup or change defaults: " "[cyan]pwpush config wizard[/cyan][/dim]"
     )
     console.print()
     console.print("[bold]Quick Start:[/bold]")
+    console.print("  [cyan]pwpush config wizard[/cyan]           # Guided setup")
     console.print(
         "  [cyan]pwpush push[/cyan]                    # Push a password (interactive)"
     )
@@ -142,30 +143,33 @@ def show_help_with_config() -> None:
         "Command Line Interface to Password Pusher - securely share passwords, secrets, and files with expiration controls."
     )
     console.print()
-    console.print("[bold]Configuration:[/bold]")
+    console.print("[bold]Getting Started:[/bold]")
     console.print(
-        "  [cyan]pwpush config set url <instance-url>[/cyan]  # Set Password Pusher instance"
+        "  [cyan]pwpush config wizard[/cyan]           # Guided setup for instance, token, defaults"
     )
     console.print(
-        "  [cyan]pwpush login[/cyan]                                        # Login to instance"
+        "  [cyan]pwpush push[/cyan]                    # Push a password or secret interactively"
     )
     console.print(
-        "  [cyan]pwpush config[/cyan]                                       # View configuration"
-    )
-    console.print(
-        "  [cyan]pwpush config delete[/cyan]                                # Delete local config (with confirmation)"
-    )
-    console.print()
-    console.print("[bold]Examples:[/bold]")
-    console.print(
-        "  [cyan]pwpush push[/cyan]                    # Push a password (interactive)"
-    )
-    console.print(
-        "  [cyan]pwpush push --auto[/cyan]             # Auto-generate password"
+        "  [cyan]pwpush push --auto[/cyan]             # Generate and push a secure password"
     )
     console.print("  [cyan]pwpush push-file document.pdf[/cyan]  # Upload a file")
+    console.print()
+    console.print("[bold]Configuration:[/bold]")
     console.print(
-        "  [cyan]pwpush login[/cyan]                   # Login for advanced features"
+        "  [cyan]pwpush config wizard[/cyan]                  # Recommended: guided setup/update"
+    )
+    console.print(
+        "  [cyan]pwpush config[/cyan]                         # View current configuration"
+    )
+    console.print(
+        "  [cyan]pwpush login[/cyan]                          # Add account credentials/API token"
+    )
+    console.print(
+        "  [cyan]pwpush config set <key> <value>[/cyan]        # Advanced: direct config edit"
+    )
+    console.print(
+        "  [cyan]pwpush config delete[/cyan]                  # Delete local config (with confirmation)"
     )
     console.print()
     console.print("[bold]Available Commands:[/bold]")
@@ -180,7 +184,9 @@ def show_help_with_config() -> None:
     console.print("  [cyan]expire[/cyan]      Expire a push")
     console.print("  [cyan]audit[/cyan]       Show the audit log for the given push")
     console.print("  [cyan]list[/cyan]        List active pushes (if logged in)")
-    console.print("  [cyan]config[/cyan]      Show & modify CLI configuration")
+    console.print(
+        "  [cyan]config[/cyan]      Setup, show, and modify CLI configuration"
+    )
     console.print()
     console.print("[bold]Global Options:[/bold]")
     console.print("  [cyan]--json, -j[/cyan]     Output results in JSON format")
@@ -191,6 +197,9 @@ def show_help_with_config() -> None:
     console.print()
     console.print("[bold]Need More Help?[/bold]")
     console.print("  [cyan]pwpush <command> --help[/cyan]  # Help for specific command")
+    console.print(
+        "  [cyan]pwpush config --help[/cyan]     # Configuration wizard and direct edits"
+    )
     console.print()
 
 
@@ -382,7 +391,23 @@ def logout() -> None:
         rprint("Log out successful.")
 
 
-@app.command()
+HELP_TEXT = """Push a new password, secret note or text.
+
+[dim]Examples:[/]
+[code]
+pwpush push                                      # Interactive mode
+pwpush push --secret "mypassword"                # Direct secret
+pwpush push --auto                               # Auto-generate password
+pwpush push --secret "data" --deletable          # Allow deletion by viewer
+pwpush push --secret "data" --retrieval-step     # Require click-through
+pwpush push --secret "https://..." --kind url    # Push as URL
+pwpush push --secret "QR data" --kind qr         # Push as QR code
+pwpush push --secret "data" --passphrase "pass"  # With passphrase
+pwpush push --secret "data" --prompt-passphrase  # Prompt for passphrase
+[/code]"""
+
+
+@app.command(help=HELP_TEXT)
 def push(
     ctx: typer.Context,
     days: int | None = typer.Option(None, help="Expire after this many days."),
@@ -402,8 +427,6 @@ def push(
     secret: str | None = typer.Option(
         None,
         help="The secret text/password to push (will prompt if not provided)",
-        hide_input=True,
-        confirmation_prompt=True,
     ),
     passphrase: str | None = typer.Option(
         None,
@@ -419,20 +442,6 @@ def push(
         help="The kind of push to create. Options: text, url, qr. Default: text",
     ),
 ) -> None:
-    """
-    Push a new password, secret note or text.
-
-    Examples:
-        pwpush push                                    # Interactive mode
-        pwpush push --secret "mypassword"             # Direct secret
-        pwpush push --auto                            # Auto-generate password
-        pwpush push --secret "data" --deletable       # Allow deletion by viewer
-        pwpush push --secret "data" --retrieval-step  # Require click-through
-        pwpush push --secret "https://example.com" --kind url  # Push as URL
-        pwpush push --secret "QR data" --kind qr      # Push as QR code
-        pwpush push --secret "data" --passphrase "pass"  # With passphrase
-        pwpush push --secret "data" --prompt-passphrase  # Prompt for passphrase
-    """
     data: dict[str, dict[str, Any]] = {"password": {}}
     api_profile = current_api_profile()
 
@@ -451,10 +460,40 @@ def push(
         secret = generate_secret(50)
         passphrase = genpass(2)
 
-    if not secret:
-        secret = typer.prompt("Enter secret", hide_input=True, confirmation_prompt=True)
+    # If secret not provided via --secret, prompt for it interactively
+    if secret is None and not auto:
+        secret = getpass.getpass("Enter secret: ")
 
-    # Handle passphrase logic
+    # Interactive mode: ask if user wants to add a passphrase
+    # This happens when secret was prompted (not via --secret)
+    # and --passphrase wasn't provided, and --prompt-passphrase wasn't used
+    secret_from_cli = ctx.params.get("secret") is not None
+    if (
+        not secret_from_cli
+        and secret is not None
+        and passphrase is None
+        and not prompt_passphrase
+        and not auto
+    ):
+        add_passphrase = typer.confirm(
+            "Would you like to add a passphrase to protect this secret?",
+            default=False,
+        )
+        if add_passphrase:
+            while True:
+                first = getpass.getpass("Enter passphrase: ")
+                if not first:
+                    rprint(
+                        "[yellow]Passphrase cannot be empty. Try again or press Ctrl+C to cancel.[/yellow]"
+                    )
+                    continue
+                second = getpass.getpass("Confirm passphrase: ")
+                if first == second:
+                    passphrase = first
+                    break
+                rprint("[red]Passphrases do not match. Please try again.[/red]")
+
+    # Handle --prompt-passphrase flag (explicit passphrase prompting)
     if prompt_passphrase:
         # User provided --prompt-passphrase flag, prompt for it
         first = None
@@ -851,7 +890,7 @@ def pretty_output() -> bool:
 app.add_typer(
     config.app,
     name="config",
-    help="Show (default) & modify CLI configuration.",
+    help="Setup, show, and modify CLI configuration.",
 )
 
 if __name__ == "__main__":
