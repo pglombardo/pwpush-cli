@@ -4,6 +4,7 @@ from typing import Any
 import getpass
 import secrets
 import string
+import sys
 import time
 from enum import Enum
 
@@ -456,20 +457,36 @@ def push(
     # Set the kind in the request data
     data["password"]["kind"] = kind
 
+    # Track if input came from stdin pipe (to disable interactive prompts)
+    piped_input = False
+
+    # Priority: 1) --auto, 2) --secret CLI arg, 3) piped stdin, 4) interactive prompt
     if auto:
         secret = generate_secret(50)
         passphrase = genpass(2)
-
-    # If secret not provided via --secret, prompt for it interactively
-    if secret is None and not auto:
-        secret = getpass.getpass("Enter secret: ")
+    elif secret is None:
+        # Check for piped input (stdin is not a TTY)
+        if not sys.stdin.isatty():
+            secret = sys.stdin.read().rstrip("\n\r")
+            piped_input = True
+            # Validate that piped input is not empty
+            if secret == "":
+                rprint(
+                    "[red]Error: No secret provided on stdin. Pipe a non-empty secret, "
+                    "use --secret '' to intentionally send an empty secret, or use --auto.[/red]"
+                )
+                raise typer.Exit(1)
+        else:
+            secret = getpass.getpass("Enter secret: ")
+            piped_input = False
 
     # Interactive mode: ask if user wants to add a passphrase
-    # This happens when secret was prompted (not via --secret)
+    # This happens when secret was prompted (not via --secret or pipe)
     # and --passphrase wasn't provided, and --prompt-passphrase wasn't used
     secret_from_cli = ctx.params.get("secret") is not None
     if (
         not secret_from_cli
+        and not piped_input
         and secret is not None
         and passphrase is None
         and not prompt_passphrase
