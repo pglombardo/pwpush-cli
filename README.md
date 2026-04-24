@@ -156,7 +156,7 @@ pwpush expire <url_token>
 
 ```bash
 # View current configuration
-pwpush config show
+pwpush config
 
 # Set default expiration settings
 pwpush config set expire_after_days 7
@@ -164,6 +164,9 @@ pwpush config set expire_after_views 10
 
 # Enable JSON output by default
 pwpush config set json true
+
+# Delete local configuration file (asks for confirmation)
+pwpush config delete
 
 # Logout and clear credentials
 pwpush logout
@@ -284,7 +287,7 @@ pwpush push-file sensitive_document.pdf --days 7 --views 3 --retrieval-step
 **Connection Errors**
 ```bash
 # Check your instance URL
-pwpush config show
+pwpush config
 
 # Test connectivity
 pwpush --debug push --secret "test"
@@ -293,7 +296,7 @@ pwpush --debug push --secret "test"
 **Authentication Issues**
 ```bash
 # Verify your credentials
-pwpush config show
+pwpush config
 
 # Re-login
 pwpush logout
@@ -316,6 +319,7 @@ pwpush --help
 # Get help for specific commands
 pwpush push --help
 pwpush config --help
+pwpush config delete --help
 ```
 
 ## Security Notes
