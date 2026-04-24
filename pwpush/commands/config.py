@@ -5,6 +5,7 @@ from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
 
+from pwpush.config_wizard import run_config_wizard
 from pwpush.options import (
     default_config,
     json_output,
@@ -27,6 +28,24 @@ def config_commands(ctx: typer.Context) -> None:
     """
     if ctx.invoked_subcommand is None:
         show()
+
+
+@app.command()
+def wizard() -> None:
+    """
+    Run the interactive configuration wizard.
+    """
+    run_config_wizard()
+    raise typer.Exit(code=0)
+
+
+@app.command()
+def init() -> None:
+    """
+    Run the interactive configuration wizard.
+    """
+    run_config_wizard()
+    raise typer.Exit(code=0)
 
 
 @app.command()
