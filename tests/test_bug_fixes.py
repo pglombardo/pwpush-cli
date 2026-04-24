@@ -12,6 +12,13 @@ from pwpush.utils import parse_boolean
 runner = CliRunner()
 
 
+@pytest.fixture(autouse=True)
+def default_legacy_profile():
+    """Keep existing tests deterministic unless explicitly overridden."""
+    with patch("pwpush.__main__.current_api_profile", return_value="legacy"):
+        yield
+
+
 def test_parse_boolean():
     """Test the parse_boolean utility function."""
     # Test boolean inputs
@@ -526,7 +533,10 @@ def test_list_falls_back_to_modern_active_endpoint() -> None:
     user_config["instance"]["email"] = "user@example.test"
     user_config["instance"]["token"] = "token-value"
 
-    with patch("pwpush.__main__.make_request") as mock_request:
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="legacy"),
+        patch("pwpush.__main__.make_request") as mock_request,
+    ):
         missing_endpoint = MagicMock()
         missing_endpoint.status_code = 404
 
@@ -550,7 +560,10 @@ def test_list_falls_back_to_modern_expired_endpoint() -> None:
     user_config["instance"]["email"] = "user@example.test"
     user_config["instance"]["token"] = "token-value"
 
-    with patch("pwpush.__main__.make_request") as mock_request:
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="legacy"),
+        patch("pwpush.__main__.make_request") as mock_request,
+    ):
         missing_endpoint = MagicMock()
         missing_endpoint.status_code = 404
 
@@ -565,3 +578,148 @@ def test_list_falls_back_to_modern_expired_endpoint() -> None:
         assert result.exit_code == 0
         assert mock_request.call_args_list[0].args[1] == "/p/expired.json"
         assert mock_request.call_args_list[1].args[1] == "/api/v2/pushes/expired"
+
+
+def test_list_prefers_v2_endpoint_when_profile_is_v2() -> None:
+    """Test list command starts with v2 endpoint when available."""
+    from pwpush.commands.config import user_config
+
+    user_config["instance"]["email"] = "user@example.test"
+    user_config["instance"]["token"] = "token-value"
+
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="v2"),
+        patch("pwpush.__main__.make_request") as mock_request,
+    ):
+        success_endpoint = MagicMock()
+        success_endpoint.status_code = 200
+        success_endpoint.json.return_value = []
+        mock_request.return_value = success_endpoint
+
+        result = runner.invoke(app, ["list"])
+
+        assert result.exit_code == 0
+        assert mock_request.call_args_list[0].args[1] == "/api/v2/pushes/active"
+
+
+def test_push_uses_v2_paths_and_payload_shape() -> None:
+    """Test push command uses v2 endpoint and payload envelope."""
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="v2"),
+        patch("pwpush.__main__.make_request") as mock_request,
+    ):
+        create_response = MagicMock()
+        create_response.status_code = 201
+        create_response.json.return_value = {"url_token": "test-token"}
+
+        preview_response = MagicMock()
+        preview_response.status_code = 200
+        preview_response.json.return_value = {
+            "url": "https://pwpush.com/en/p/test-token"
+        }
+
+        mock_request.side_effect = [create_response, preview_response]
+
+        result = runner.invoke(
+            app,
+            ["push", "--secret", "test-password", "--days", "7", "--kind", "url"],
+        )
+
+        assert result.exit_code == 0
+        assert mock_request.call_args_list[0].args[1] == "/api/v2/pushes"
+        post_data = mock_request.call_args_list[0].kwargs["post_data"]
+        assert "push" in post_data
+        assert "password" not in post_data
+        assert post_data["push"]["expire_after_duration"] == 12
+        assert post_data["push"]["kind"] == "url"
+        assert (
+            mock_request.call_args_list[1].args[1]
+            == "/api/v2/pushes/test-token/preview"
+        )
+
+
+def test_push_file_uses_v2_paths_payload_and_upload_key() -> None:
+    """Test push-file command uses v2 endpoint and multipart key mapping."""
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="v2"),
+        patch("pwpush.__main__.make_request") as mock_request,
+        patch("builtins.open", create=True) as mock_open,
+    ):
+        mock_file = MagicMock()
+        mock_open.return_value.__enter__.return_value = mock_file
+
+        create_response = MagicMock()
+        create_response.status_code = 201
+        create_response.json.return_value = {"url_token": "file-token"}
+
+        preview_response = MagicMock()
+        preview_response.status_code = 200
+        preview_response.json.return_value = {
+            "url": "https://pwpush.com/en/f/file-token"
+        }
+        mock_request.side_effect = [create_response, preview_response]
+
+        result = runner.invoke(app, ["push-file", "test-file.txt", "--days", "7"])
+
+        assert result.exit_code == 0
+        assert mock_request.call_args_list[0].args[1] == "/api/v2/pushes"
+        post_data = mock_request.call_args_list[0].kwargs["post_data"]
+        upload_files = mock_request.call_args_list[0].kwargs["upload_files"]
+        assert "push" in post_data
+        assert post_data["push"]["kind"] == "file"
+        assert post_data["push"]["expire_after_duration"] == 12
+        assert "push[files][]" in upload_files
+        assert "file_push[files][]" not in upload_files
+        assert (
+            mock_request.call_args_list[1].args[1]
+            == "/api/v2/pushes/file-token/preview"
+        )
+
+
+def test_expire_uses_v2_endpoint() -> None:
+    """Test expire command uses v2 route when profile is v2."""
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="v2"),
+        patch("pwpush.__main__.make_request") as mock_request,
+    ):
+        success_response = MagicMock()
+        success_response.status_code = 200
+        success_response.json.return_value = {}
+        mock_request.return_value = success_response
+
+        result = runner.invoke(app, ["expire", "abc123"])
+
+        assert result.exit_code == 0
+        assert mock_request.call_args_list[0].args[1] == "/api/v2/pushes/abc123"
+
+
+def test_audit_supports_v2_logs_shape() -> None:
+    """Test audit command handles v2 logs response shape."""
+    from pwpush.commands.config import user_config
+
+    user_config["instance"]["email"] = "user@example.test"
+    user_config["instance"]["token"] = "token-value"
+
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="v2"),
+        patch("pwpush.__main__.make_request") as mock_request,
+    ):
+        success_response = MagicMock()
+        success_response.status_code = 200
+        success_response.json.return_value = {
+            "logs": [
+                {
+                    "ip": "127.0.0.1",
+                    "user_agent": "pytest",
+                    "referrer": None,
+                    "kind": "creation",
+                    "created_at": "2026-01-01T10:00:00.000Z",
+                }
+            ]
+        }
+        mock_request.return_value = success_response
+
+        result = runner.invoke(app, ["audit", "abc123"])
+
+        assert result.exit_code == 0
+        assert mock_request.call_args_list[0].args[1] == "/api/v2/pushes/abc123/audit"

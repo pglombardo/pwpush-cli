@@ -20,6 +20,22 @@ Command Line Interface to Password Pusher.
 
 ## Very first steps
 
+## API Routing Architecture (v2 + Legacy)
+
+The CLI now resolves API support per instance and defaults to API v2 when available.
+
+- Probe endpoint: `GET /api/v2/version`
+- If probe returns `200`, use v2 routes.
+- Otherwise, fall back to legacy routes.
+
+Implementation modules:
+
+- `pwpush/api/client.py`: URL normalization, auth headers, request transport.
+- `pwpush/api/capabilities.py`: API profile detection (`v2` vs `legacy`) with in-process cache.
+- `pwpush/api/endpoints.py`: endpoint catalogs + payload/response adapters.
+
+Command handlers in `pwpush/__main__.py` now route through this API layer for `login`, `push`, `push-file`, `list`, `audit`, and `expire`.
+
 ### Initialize your code
 
 1. Initialize `git` inside your repo:

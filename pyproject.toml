@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "pwpush"
-version = "0.13.1"
+version = "0.14.0"
 description = "Command Line Interface to Password Pusher - secure information distribution with automatic expiration controls."
 readme = "README.md"
 license = {text = "MIT"}
@@ -71,6 +71,8 @@ virtualenv = ">=21.2.4"
 setuptools = ">=78.1.1"
 cryptography = ">=44.0.1"
 regex = ">=2025.7.29"
+types-requests = "^2.33.0.20260408"
+types-python-dateutil = "^2.9.0.20260408"
 
 [tool.black]
 # https://github.com/psf/black

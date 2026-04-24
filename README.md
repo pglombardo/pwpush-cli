@@ -22,6 +22,21 @@ Secure information distribution with automatic expiration controls.
 
 The `pwpush` CLI is a powerful command-line tool that interfaces with [Password Pusher](https://pwpush.com) instances for secure information distribution. It supports both the hosted services (eu.pwpush.com, us.pwpush.com) and self-hosted instances.
 
+### API Compatibility (Auto-Negotiation)
+
+`pwpush` prefers API v2 automatically.
+
+- On command execution, the CLI probes `GET /api/v2/version`.
+- If available (`200`), the CLI uses API v2 endpoints.
+- If unavailable, the CLI falls back to legacy endpoints used by older instances.
+- The detected profile is cached in config with a TTL (`api_profile_ttl_seconds`, default 3600 seconds) to reduce repeated probes across CLI runs.
+
+This supports:
+
+- Password Pusher Pro/self-hosted Pro instances with API v2
+- Open source Password Pusher instances with API v2 support (v2.4.2+)
+- Older open source/self-hosted instances via legacy endpoint fallback
+
 ### Why Secure Information Distribution?
 
 Traditional communication tools create permanent digital footprints that can be exploited years later. Password Pusher sidesteps this by creating:
