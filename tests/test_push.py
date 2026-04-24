@@ -54,8 +54,8 @@ def test_basic_push_passphrase(monkeypatch):
 
 
 def test_file_push(monkeypatch):
-    user_config["instance"]["email"] = "user@example.test"
-    user_config["instance"]["token"] = "token-value"
+    monkeypatch.setitem(user_config["instance"], "email", "user@example.test")
+    monkeypatch.setitem(user_config["instance"], "token", "token-value")
 
     monkeypatch.setattr(
         requests, "post", build_request_mock({"url_token": "super-token"})
