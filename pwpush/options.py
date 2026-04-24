@@ -1,3 +1,5 @@
+from typing import Any
+
 import configparser
 import os
 from pathlib import Path
@@ -11,7 +13,7 @@ user_config_dir = Path(typer.get_app_dir("pwpush"))
 user_config_file = user_config_dir.joinpath("config.ini")
 
 cli_options = {"json": False, "verbose": False, "debug": False}
-default_config = {"instance": {}}
+default_config: dict[str, dict[str, Any]] = {"instance": {}}
 default_config["instance"]["url"] = "https://eu.pwpush.com"
 default_config["instance"]["email"] = "Not Set"
 default_config["instance"]["token"] = "Not Set"

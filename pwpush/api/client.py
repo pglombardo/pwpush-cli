@@ -1,3 +1,5 @@
+from typing import Any
+
 from urllib.parse import urljoin
 
 import requests
@@ -36,11 +38,11 @@ def send_request(
     path: str,
     email: str,
     token: str,
-    post_data: dict | None = None,
-    upload_files: dict | None = None,
+    post_data: dict[str, Any] | None = None,
+    upload_files: dict[str, Any] | None = None,
     timeout: int = 30,
     debug: bool = False,
-):
+) -> requests.Response:
     """Send one HTTP request to the configured instance."""
     auth_headers = build_auth_headers(email, token)
     url = absolute_url(base_url, path)

@@ -9,6 +9,7 @@ from pwpush.options import json_output, save_config, user_config
 from pwpush.utils import mask_sensitive_value
 
 app = typer.Typer()
+__all__ = ["app", "user_config"]
 
 console = Console()
 
@@ -141,12 +142,12 @@ def show(
 
 @app.command()
 def set(
-    key: str = typer.Argument(None, help="The key to set."),
-    value: str = typer.Argument(None, help="The value to assign."),
-    key_flag: str = typer.Option(
+    key: str | None = typer.Argument(None, help="The key to set."),
+    value: str | None = typer.Argument(None, help="The value to assign."),
+    key_flag: str | None = typer.Option(
         None, "--key", help="The key to set (alternative to positional argument)."
     ),
-    value_flag: str = typer.Option(
+    value_flag: str | None = typer.Option(
         None,
         "--value",
         help="The value to assign (alternative to positional argument).",
@@ -195,7 +196,7 @@ def set(
             user_config[section][key] = str(value)
             found = True
 
-    if found == False:
+    if not found:
         rprint("[red]That key was not found in the configuration.[/red]")
         rprint("See 'pwpush config show' for a list of valid keys.")
         raise typer.Exit(code=1)
@@ -218,7 +219,7 @@ def unset(
             user_config[section][key] = "Not Set"
             found = True
 
-    if found == False:
+    if not found:
         rprint("[red]That key was not found in the configuration.[/red]")
         rprint("See 'pwpush config show' for a list of valid keys.")
         raise typer.Exit(code=1)

@@ -1,3 +1,5 @@
+from typing import Any
+
 from dateutil import parser
 
 from pwpush.api.capabilities import API_PROFILE_LEGACY, API_PROFILE_V2
@@ -61,7 +63,9 @@ def push_audit_path(api_profile: str, url_token: str) -> str:
     return f"/p/{url_token}/audit.json"
 
 
-def adapt_text_payload_for_profile(payload: dict, api_profile: str) -> dict:
+def adapt_text_payload_for_profile(
+    payload: dict[str, Any], api_profile: str
+) -> dict[str, Any]:
     """Convert text payload between legacy and v2 formats."""
     if api_profile == API_PROFILE_LEGACY:
         return payload
@@ -93,7 +97,9 @@ def adapt_text_payload_for_profile(payload: dict, api_profile: str) -> dict:
     return {"push": push_payload}
 
 
-def adapt_file_payload_for_profile(payload: dict, api_profile: str) -> dict:
+def adapt_file_payload_for_profile(
+    payload: dict[str, Any], api_profile: str
+) -> dict[str, Any]:
     """Convert file payload between legacy and v2 formats."""
     if api_profile == API_PROFILE_LEGACY:
         return payload
@@ -122,7 +128,9 @@ def adapt_file_payload_for_profile(payload: dict, api_profile: str) -> dict:
     return {"push": push_payload}
 
 
-def adapt_file_uploads_for_profile(upload_files: dict, api_profile: str) -> dict:
+def adapt_file_uploads_for_profile(
+    upload_files: dict[str, Any], api_profile: str
+) -> dict[str, Any]:
     """Rename multipart file key for v2 when required."""
     if api_profile == API_PROFILE_LEGACY:
         return upload_files
@@ -131,7 +139,7 @@ def adapt_file_uploads_for_profile(upload_files: dict, api_profile: str) -> dict
     return upload_files
 
 
-def normalize_audit_events(body: dict) -> list[dict[str, str]]:
+def normalize_audit_events(body: dict[str, Any]) -> list[dict[str, str]]:
     """Normalize legacy and v2 audit payloads into one renderable schema."""
     if "views" in body:
         rows = []

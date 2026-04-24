@@ -1,4 +1,4 @@
-# type: ignore[attr-defined]
+# mypy: disable-error-code="attr-defined"
 """Command Line Interface to Password Pusher - secure information distribution with automatic expiration controls."""
 
 import sys

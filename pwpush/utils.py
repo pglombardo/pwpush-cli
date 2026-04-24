@@ -1,5 +1,7 @@
 """Utility functions for the pwpush CLI."""
 
+from typing import Any
+
 import string
 
 
@@ -30,7 +32,7 @@ def mask_sensitive_value(value: str, visible_chars: int = 4) -> str:
     return "*" * (len(value) - visible_chars) + value[-visible_chars:]
 
 
-def parse_boolean(value: bool | str | None) -> bool:
+def parse_boolean(value: Any) -> bool:
     """Parse a boolean value from string or boolean input.
 
     Args:
@@ -67,10 +69,10 @@ def check_secret_conditions(
     length: int = 20,
 ) -> bool:
     """check if a secret meets conditions"""
-    conditions = []
+    conditions: list[bool] = []
 
     if punctuation:
-        conditions.append(s in string.punctuation for s in secret)
+        conditions.append(any(s in string.punctuation for s in secret))
     if lower:
         conditions.append(any(s.islower() for s in secret))
     if upper:

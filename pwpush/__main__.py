@@ -1,4 +1,6 @@
-# type: ignore[attr-defined]
+# mypy: disable-error-code="attr-defined"
+from typing import Any
+
 import getpass
 import secrets
 import string
@@ -81,8 +83,6 @@ def generate_secret(length=50):
         if check_secret_conditions(secret, length=length):
             return secret
         attempts += 1
-
-    return secret
 
 
 def version_callback(print_version: bool) -> None:
@@ -361,27 +361,27 @@ def logout() -> None:
 @app.command()
 def push(
     ctx: typer.Context,
-    days: int = typer.Option(None, help="Expire after this many days."),
-    views: int = typer.Option(None, help="Expire after this many views."),
-    deletable: bool = typer.Option(
+    days: int | None = typer.Option(None, help="Expire after this many days."),
+    views: int | None = typer.Option(None, help="Expire after this many views."),
+    deletable: bool | None = typer.Option(
         None, help="Allow users to delete passwords once retrieved."
     ),
-    retrieval_step: bool = typer.Option(
+    retrieval_step: bool | None = typer.Option(
         None,
         help="1-click retrieval step: Helps to avoid chat systems and URL scanners from eating up views.",
     ),
-    note: str = typer.Option(
+    note: str | None = typer.Option(
         None,
         help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..  Requires login.",
     ),
     auto: bool = typer.Option(False, help="Auto create password and passphrase"),
-    secret: str = typer.Option(
+    secret: str | None = typer.Option(
         None,
         help="The secret text/password to push (will prompt if not provided)",
         hide_input=True,
         confirmation_prompt=True,
     ),
-    passphrase: str = typer.Option(
+    passphrase: str | None = typer.Option(
         None,
         help="Optional passphrase to protect the secret",
     ),
@@ -409,7 +409,7 @@ def push(
         pwpush push --secret "data" --passphrase "pass"  # With passphrase
         pwpush push --secret "data" --prompt-passphrase  # Prompt for passphrase
     """
-    data = {"password": {}}
+    data: dict[str, dict[str, Any]] = {"password": {}}
     api_profile = current_api_profile()
 
     # Validate kind parameter
@@ -523,16 +523,16 @@ def push(
 
 @app.command(name="push-file")
 def pushFile(
-    days: int = typer.Option(None, help="Expire after this many days."),
-    views: int = typer.Option(None, help="Expire after this many views."),
-    deletable: bool = typer.Option(
+    days: int | None = typer.Option(None, help="Expire after this many days."),
+    views: int | None = typer.Option(None, help="Expire after this many views."),
+    deletable: bool | None = typer.Option(
         None, help="Allow users to delete passwords once retrieved."
     ),
-    retrieval_step: bool = typer.Option(
+    retrieval_step: bool | None = typer.Option(
         None,
         help="1-click retrieval step: Helps to avoid chat systems and URL scanners from eating up views.",
     ),
-    note: str = typer.Option(
+    note: str | None = typer.Option(
         None,
         help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..  Requires login.",
     ),
@@ -551,7 +551,7 @@ def pushFile(
     """
     api_profile = current_api_profile()
 
-    data = {"file_push": {}}
+    data: dict[str, dict[str, Any]] = {"file_push": {}}
     data["file_push"]["payload"] = ""
     data["file_push"]["kind"] = "file"
 
