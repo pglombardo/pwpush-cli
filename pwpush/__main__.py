@@ -245,7 +245,8 @@ def current_api_profile(
 
 def require_api_token(operation: str) -> None:
     """Require a configured API token before authenticated operations."""
-    if user_config["instance"]["token"] == "Not Set":
+    token = user_config["instance"]["token"].strip()
+    if not token or token == "Not Set":
         rprint(
             f"[red]Error: '{operation}' requires an API token. "
             "Run 'pwpush login' or set one with 'pwpush config set token <token>'.[/red]"
