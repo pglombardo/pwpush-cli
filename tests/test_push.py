@@ -15,14 +15,9 @@ from tests import *
 runner = CliRunner()
 
 
-def test_push_no_options(
-    mock_make_request,
-    mock_create_password,
-    mock_generate_password,
-    mock_getpass,
-    mock_genpass,
-):
-    result = runner.invoke(app, "push")
+def test_push_no_options(mock_make_request):
+    """Test push with no options - uses piped input since CliRunner can't simulate TTY."""
+    result = runner.invoke(app, ["push"], input="test-secret")
     assert result.exit_code == 0
     assert "The secret has been pushed to" in result.output
 
@@ -123,3 +118,151 @@ def test_push_with_invalid_kind():
     )
     assert result.exit_code == 1
     assert "Invalid kind 'invalid'. Must be one of: text, url, qr" in result.output
+
+
+def _get_post_call(mock_make_request):
+    """Helper to find the POST call from make_request mock by HTTP method."""
+    for call in mock_make_request.call_args_list:
+        if call[0] and call[0][0] == "POST":
+            return call
+    return None
+
+
+def test_push_with_piped_input(mock_make_request):
+    """Test that piped input is read from stdin when --secret is not provided."""
+    result = runner.invoke(app, ["push"], input="piped-secret-from-stdin")
+    assert result.exit_code == 0
+    assert "The secret has been pushed to" in result.output
+    # Verify make_request was called with the piped secret (first call is POST)
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    assert post_call[1]["post_data"]["password"]["payload"] == "piped-secret-from-stdin"
+
+
+def test_push_with_piped_input_strips_newlines(mock_make_request):
+    """Test that trailing newlines are stripped from piped input."""
+    # Simulate piped input with trailing newline
+    result = runner.invoke(app, ["push"], input="secret-with-newline\n")
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    # Verify the newline was stripped
+    assert post_call[1]["post_data"]["password"]["payload"] == "secret-with-newline"
+
+
+def test_push_with_piped_input_strips_carriage_return(mock_make_request):
+    """Test that trailing \r\n is stripped from piped input (Windows style)."""
+    result = runner.invoke(app, ["push"], input="secret-with-crlf\r\n")
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    assert post_call[1]["post_data"]["password"]["payload"] == "secret-with-crlf"
+
+
+def test_push_secret_arg_takes_precedence_over_pipe(mock_make_request):
+    """Test that --secret CLI arg takes precedence over piped input."""
+    result = runner.invoke(
+        app, ["push", "--secret", "cli-secret"], input="piped-secret"
+    )
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    # Should use the CLI arg, not the piped input
+    assert post_call[1]["post_data"]["password"]["payload"] == "cli-secret"
+
+
+def test_push_piped_input_with_passphrase_flag(mock_make_request):
+    """Test that --passphrase works with piped input."""
+    result = runner.invoke(
+        app, ["push", "--passphrase", "my-passphrase"], input="piped-secret"
+    )
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    assert post_call[1]["post_data"]["password"]["payload"] == "piped-secret"
+    assert post_call[1]["post_data"]["password"]["passphrase"] == "my-passphrase"
+
+
+def test_push_piped_input_skips_interactive_passphrase_prompt(mock_make_request):
+    """Test that interactive passphrase confirmation is skipped with piped input."""
+    # When piped, we should NOT see interactive passphrase prompts
+    # This is verified by the fact that the command succeeds without
+    # any getpass or typer.prompt calls being mocked
+    result = runner.invoke(app, ["push"], input="piped-secret")
+    assert result.exit_code == 0
+    assert "The secret has been pushed to" in result.output
+    # Ensure no passphrase-related prompts appeared
+    assert "Would you like to add a passphrase" not in result.output
+
+
+def test_push_piped_input_with_kind_url(mock_make_request):
+    """Test piped input works with --kind url."""
+    result = runner.invoke(
+        app, ["push", "--kind", "url"], input="https://example.com/piped"
+    )
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    assert (
+        post_call[1]["post_data"]["password"]["payload"] == "https://example.com/piped"
+    )
+    assert post_call[1]["post_data"]["password"]["kind"] == "url"
+
+
+def test_push_piped_input_with_kind_qr(mock_make_request):
+    """Test piped input works with --kind qr."""
+    result = runner.invoke(app, ["push", "--kind", "qr"], input="qr-data-from-pipe")
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    assert post_call[1]["post_data"]["password"]["payload"] == "qr-data-from-pipe"
+    assert post_call[1]["post_data"]["password"]["kind"] == "qr"
+
+
+def test_push_piped_input_with_expiration_options(mock_make_request):
+    """Test piped input works with expiration options."""
+    result = runner.invoke(
+        app,
+        ["push", "--days", "3", "--views", "5", "--deletable", "--retrieval-step"],
+        input="piped-secret",
+    )
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    data = post_call[1]["post_data"]["password"]
+    assert data["payload"] == "piped-secret"
+    assert data["expire_after_days"] == 3
+    assert data["expire_after_views"] == 5
+    assert data["deletable_by_viewer"] is True
+    assert data["retrieval_step"] is True
+
+
+def test_push_piped_input_multiline(mock_make_request):
+    """Test that multiline piped input is preserved (except trailing newlines)."""
+    multiline_input = "line1\nline2\nline3\n"
+    result = runner.invoke(app, ["push"], input=multiline_input)
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    # Only trailing newlines should be stripped, internal ones preserved
+    assert post_call[1]["post_data"]["password"]["payload"] == "line1\nline2\nline3"
+
+
+def test_push_empty_piped_input_rejected(mock_make_request):
+    """Test that empty piped input is rejected with a helpful error."""
+    result = runner.invoke(app, ["push"], input="")
+    assert result.exit_code == 1
+    assert "No secret provided on stdin" in result.output
+    # Verify no POST request was made
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is None
+
+
+def test_push_with_piped_input_explicit_secret(mock_make_request):
+    """Test push with explicit secret via input (piped input path)."""
+    result = runner.invoke(app, ["push"], input="explicit-secret")
+    assert result.exit_code == 0
+    assert "The secret has been pushed to" in result.output
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    assert post_call[1]["post_data"]["password"]["payload"] == "explicit-secret"
