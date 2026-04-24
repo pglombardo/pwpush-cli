@@ -54,7 +54,10 @@ mypy:
 .PHONY: check-safety
 check-safety:
 	poetry check
-	poetry run pip-audit --progress-spinner off
+	@tmp_requirements="$$(mktemp)"; \
+	poetry export --without-hashes --only main -f requirements.txt -o "$$tmp_requirements"; \
+	poetry run pip-audit --progress-spinner off -r "$$tmp_requirements"; \
+	rm -f "$$tmp_requirements"
 	poetry run bandit -ll --recursive pwpush tests
 
 .PHONY: lint

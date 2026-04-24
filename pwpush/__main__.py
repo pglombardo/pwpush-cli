@@ -3,6 +3,7 @@ import getpass
 import secrets
 import string
 from enum import Enum
+from urllib.parse import urljoin
 
 import requests
 import typer
@@ -239,10 +240,40 @@ def login(
 
     After login, you can use commands like 'list', 'audit', and 'expire'.
     """
-    r = requests.get(f"{url}/en/d/active", auth=(email, token), timeout=5)
+    normalized_url = url.rstrip("/")
+    auth_headers = {
+        "X-User-Email": email,
+        "X-User-Token": token,
+        "Authorization": f"Bearer {token}",
+    }
+    validation_paths = ["/p/active.json", "/api/v2/pushes/active", "/en/d/active"]
+    r = None
+
+    for path in validation_paths:
+        try:
+            response = requests.get(
+                urljoin(normalized_url + "/", path.lstrip("/")),
+                headers=auth_headers,
+                timeout=5,
+            )
+        except requests.exceptions.RequestException:
+            continue
+
+        # Keep searching when an endpoint doesn't exist on this server.
+        if response.status_code == 404:
+            continue
+
+        r = response
+        break
+
+    if r is None:
+        rprint(
+            "[red]Could not log in: no compatible authentication endpoint found.[/red]"
+        )
+        raise typer.Exit(1)
 
     if r.status_code == 200:
-        user_config["instance"]["url"] = url
+        user_config["instance"]["url"] = normalized_url
         user_config["instance"]["email"] = email
         user_config["instance"]["token"] = token
         save_config()
@@ -621,8 +652,22 @@ def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) 
         rprint("You must log into an instance first.")
         raise typer.Exit(1)
 
-    path = "/en/d/expired.json" if expired else "/en/d/active.json"
-    r = make_request("GET", path)
+    paths = (
+        ["/p/expired.json", "/api/v2/pushes/expired", "/en/d/expired.json"]
+        if expired
+        else ["/p/active.json", "/api/v2/pushes/active", "/en/d/active.json"]
+    )
+    r = None
+    for path in paths:
+        response = make_request("GET", path)
+        if response.status_code == 404:
+            continue
+        r = response
+        break
+
+    if r is None:
+        rprint("[red]Error: no compatible list endpoint found on this instance.[/red]")
+        raise typer.Exit(1)
 
     if r.status_code == 200:
         if json_output():
@@ -685,6 +730,7 @@ def make_request(method, path, post_data=None, upload_files=None):
     if valid_email and valid_token:
         auth_headers["X-User-Email"] = email
         auth_headers["X-User-Token"] = token
+        auth_headers["Authorization"] = f"Bearer {token}"
 
     try:
         if method == "GET":

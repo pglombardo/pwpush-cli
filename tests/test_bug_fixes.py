@@ -517,3 +517,51 @@ def test_network_error_handling():
         assert result.exit_code == 1
         # The error handling should catch the exception and exit with code 1
         # The exact error message format may vary, so we just check the exit code
+
+
+def test_list_falls_back_to_modern_active_endpoint() -> None:
+    """Test list command retries when the first endpoint is missing."""
+    from pwpush.commands.config import user_config
+
+    user_config["instance"]["email"] = "user@example.test"
+    user_config["instance"]["token"] = "token-value"
+
+    with patch("pwpush.__main__.make_request") as mock_request:
+        missing_endpoint = MagicMock()
+        missing_endpoint.status_code = 404
+
+        success_endpoint = MagicMock()
+        success_endpoint.status_code = 200
+        success_endpoint.json.return_value = []
+
+        mock_request.side_effect = [missing_endpoint, success_endpoint]
+
+        result = runner.invoke(app, ["list"])
+
+        assert result.exit_code == 0
+        assert mock_request.call_args_list[0].args[1] == "/p/active.json"
+        assert mock_request.call_args_list[1].args[1] == "/api/v2/pushes/active"
+
+
+def test_list_falls_back_to_modern_expired_endpoint() -> None:
+    """Test expired list command retries when the first endpoint is missing."""
+    from pwpush.commands.config import user_config
+
+    user_config["instance"]["email"] = "user@example.test"
+    user_config["instance"]["token"] = "token-value"
+
+    with patch("pwpush.__main__.make_request") as mock_request:
+        missing_endpoint = MagicMock()
+        missing_endpoint.status_code = 404
+
+        success_endpoint = MagicMock()
+        success_endpoint.status_code = 200
+        success_endpoint.json.return_value = []
+
+        mock_request.side_effect = [missing_endpoint, success_endpoint]
+
+        result = runner.invoke(app, ["list", "--expired"])
+
+        assert result.exit_code == 0
+        assert mock_request.call_args_list[0].args[1] == "/p/expired.json"
+        assert mock_request.call_args_list[1].args[1] == "/api/v2/pushes/expired"
