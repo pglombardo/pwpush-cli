@@ -1,27 +1,21 @@
-# Security
+# Security Policy
 
-## 🔐 Reporting Security Issues
+This page outlines the general procedure for reporting security vulnerabilities.
 
-> Do not open issues that might have security implications!
-> It is critical that security related issues are reported privately so we have time to address them before they become public knowledge.
+All reports (and the time you spend to discover them) are very much appreciated.
 
-Vulnerabilities can be reported by emailing core members:
+With the community, I hope to keep Password Pusher up to date with the latest developments and best security practices.
 
-- pwpush [pglombardo@hey.com](mailto:pglombardo@hey.com)
+As always, if you have any questions, feel free to [contact me](https://us.pwpush.com/feedbacks/new) anytime!
 
-Please include the requested information listed below (as much as you can provide) to help us better understand the nature and scope of the possible issue:
+## Supported Versions
 
-- Type of issue (e.g. buffer overflow, SQL injection, cross-site scripting, etc.)
-- Full paths of source file(s) related to the manifestation of the issue
-- The location of the affected source code (tag/branch/commit or direct URL)
-- Any special configuration required to reproduce the issue
-- Environment (e.g. Linux / Windows / macOS)
-- Step-by-step instructions to reproduce the issue
-- Proof-of-concept or exploit code (if possible)
-- Impact of the issue, including how an attacker might exploit the issue
+I encourage the safe reporting of security issues for the latest minor version of the software.  e.g. `v0.14.0` as of April 2026.
 
-This information will help us triage your report more quickly.
+This is a general rule but I would be open to hear any and all security reports that you feel are necessary.
 
-## Preferred Languages
+## Reporting a Vulnerability
 
-We prefer all communications to be in English.
+Please use the Github [Report a vulnerability](https://github.com/pglombardo/pwpush-cli/security/advisories/new) feature.
+
+_I kindly ask you to not report any potential vulnerabilities publicly as it may put existing users at risk.  Your help in this is greatly appreciated!_
