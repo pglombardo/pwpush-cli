@@ -149,7 +149,10 @@ def show_help_with_config() -> None:
         "  [cyan]pwpush login[/cyan]                                        # Login to instance"
     )
     console.print(
-        "  [cyan]pwpush config show[/cyan]                                  # View configuration"
+        "  [cyan]pwpush config[/cyan]                                       # View configuration"
+    )
+    console.print(
+        "  [cyan]pwpush config delete[/cyan]                                # Delete local config (with confirmation)"
     )
     console.print()
     console.print("[bold]Examples:[/bold]")
@@ -238,6 +241,17 @@ def current_api_profile(
         save_config()
 
     return detected_profile
+
+
+def require_api_token(operation: str) -> None:
+    """Require a configured API token before authenticated operations."""
+    token = user_config["instance"]["token"].strip()
+    if not token or token == "Not Set":
+        rprint(
+            f"[red]Error: '{operation}' requires an API token. "
+            "Run 'pwpush login' or set one with 'pwpush config set token <token>'.[/red]"
+        )
+        raise typer.Exit(1)
 
 
 @app.callback(invoke_without_command=True)
@@ -541,7 +555,7 @@ def pushFile(
     ),
 ) -> None:
     """
-    Push a new file.
+    Push a new file. Requires login with an API token.
 
     Examples:
         pwpush push-file document.pdf                    # Upload a file
@@ -549,6 +563,7 @@ def pushFile(
         pwpush push-file config.json --retrieval-step   # Require click-through
         pwpush push-file backup.zip --days 7 --views 5  # Custom expiration
     """
+    require_api_token("push-file")
     api_profile = current_api_profile()
 
     data: dict[str, dict[str, Any]] = {"file_push": {}}
@@ -627,13 +642,18 @@ def pushFile(
 
 @app.command()
 def expire(
+    ctx: typer.Context,
     url_token: str = typer.Argument(
         "", help="The secret URL token of the push to be expired."
-    )
+    ),
 ) -> None:
     """
     Expire a push.
     """
+    if not url_token:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
     path = push_expire_path(current_api_profile(), url_token)
 
     response = make_request("DELETE", path)
@@ -651,13 +671,20 @@ def expire(
 
 @app.command()
 def audit(
+    ctx: typer.Context,
     url_token: str = typer.Argument(
         "", help="The secret URL token of the push to audit."
-    )
+    ),
 ) -> None:
     """
-    Show the audit log for the given push.
+    Show the audit log for the given push. Requires login with an API token.
     """
+    if not url_token:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
+    require_api_token("audit")
+
     if user_config["instance"]["email"] == "Not Set":
         rprint("You must log into an instance first.")
         raise typer.Exit(1)
@@ -700,8 +727,10 @@ def audit(
 @app.command()
 def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) -> None:
     """
-    List active pushes (if logged in).
+    List active pushes. Requires login with an API token.
     """
+    require_api_token("list")
+
     if user_config["instance"]["email"] == "Not Set":
         rprint("You must log into an instance first.")
         raise typer.Exit(1)
@@ -809,7 +838,11 @@ def pretty_output() -> bool:
     return cli_options["pretty"] or user_config_pretty
 
 
-app.add_typer(config.app, name="config", help="Show & modify CLI configuration.")
+app.add_typer(
+    config.app,
+    name="config",
+    help="Show (default) & modify CLI configuration.",
+)
 
 if __name__ == "__main__":
     app()

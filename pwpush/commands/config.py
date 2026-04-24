@@ -5,13 +5,28 @@ from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
 
-from pwpush.options import json_output, save_config, user_config
+from pwpush.options import (
+    default_config,
+    json_output,
+    save_config,
+    user_config,
+    user_config_file,
+)
 from pwpush.utils import mask_sensitive_value
 
 app = typer.Typer()
 __all__ = ["app", "user_config"]
 
 console = Console()
+
+
+@app.callback(invoke_without_command=True)
+def config_commands(ctx: typer.Context) -> None:
+    """
+    Show configuration when no subcommand is provided.
+    """
+    if ctx.invoked_subcommand is None:
+        show()
 
 
 @app.command()
@@ -227,3 +242,29 @@ def unset(
         save_config()
         rprint("Success")
         raise typer.Exit(code=0)
+
+
+@app.command()
+def delete() -> None:
+    """
+    Delete the local configuration file after confirmation.
+    """
+    typer.confirm(
+        f"Delete config file at '{user_config_file}'? This cannot be undone.",
+        abort=True,
+    )
+
+    if user_config_file.exists():
+        try:
+            user_config_file.unlink()
+            rprint(f"Deleted config file: {user_config_file}")
+        except OSError as exc:
+            rprint(f"[red]Error: Could not delete config file: {exc}[/red]")
+            raise typer.Exit(code=1)
+    else:
+        rprint(f"No config file found at: {user_config_file}")
+
+    # Keep current process in a valid default state even after deletion.
+    user_config.clear()
+    user_config.read_dict(default_config)
+    raise typer.Exit(code=0)

@@ -3,8 +3,16 @@ import json
 from typer.testing import CliRunner
 
 from pwpush.__main__ import app
+from pwpush.options import save_config, user_config
 
 runner = CliRunner()
+
+
+def test_config_defaults_to_show():
+    result = runner.invoke(app, ["config"])
+    assert result.exit_code == 0
+    assert result.stdout.strip()
+    assert "Instance Settings" in result.stdout or '"instance": {' in result.stdout
 
 
 def test_config_show():
@@ -159,3 +167,43 @@ def test_config_set_expiration_settings():
     assert config["expiration"]["expire_after_views"] == "10"
     assert config["expiration"]["retrieval_step"] == "true"
     assert config["expiration"]["deletable_by_viewer"] == "false"
+
+
+def test_config_delete_confirmed(monkeypatch, tmp_path):
+    config_file = tmp_path / "config.ini"
+    monkeypatch.setattr("pwpush.options.user_config_file", config_file)
+    monkeypatch.setattr("pwpush.commands.config.user_config_file", config_file)
+
+    user_config["instance"]["url"] = "https://delete-test.example"
+    save_config()
+    assert config_file.exists()
+
+    result = runner.invoke(app, ["config", "delete"], input="y\n")
+    assert result.exit_code == 0
+    assert "Deleted config file:" in result.stdout
+    assert not config_file.exists()
+
+
+def test_config_delete_aborted(monkeypatch, tmp_path):
+    config_file = tmp_path / "config.ini"
+    monkeypatch.setattr("pwpush.options.user_config_file", config_file)
+    monkeypatch.setattr("pwpush.commands.config.user_config_file", config_file)
+
+    save_config()
+    assert config_file.exists()
+
+    result = runner.invoke(app, ["config", "delete"], input="n\n")
+    assert result.exit_code != 0
+    assert config_file.exists()
+
+
+def test_config_delete_when_file_missing(monkeypatch, tmp_path):
+    config_file = tmp_path / "missing-config.ini"
+    monkeypatch.setattr("pwpush.options.user_config_file", config_file)
+    monkeypatch.setattr("pwpush.commands.config.user_config_file", config_file)
+
+    assert not config_file.exists()
+
+    result = runner.invoke(app, ["config", "delete"], input="y\n")
+    assert result.exit_code == 0
+    assert "No config file found at:" in result.stdout

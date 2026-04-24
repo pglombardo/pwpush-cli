@@ -12,6 +12,22 @@ from pwpush.utils import parse_boolean
 runner = CliRunner()
 
 
+def configure_api_credentials() -> None:
+    """Configure authenticated command credentials for tests."""
+    from pwpush.commands.config import user_config
+
+    user_config["instance"]["email"] = "user@example.test"
+    user_config["instance"]["token"] = "token-value"
+
+
+def clear_api_token() -> None:
+    """Clear only the API token for missing-token tests."""
+    from pwpush.commands.config import user_config
+
+    user_config["instance"]["email"] = "user@example.test"
+    user_config["instance"]["token"] = "Not Set"
+
+
 @pytest.fixture(autouse=True)
 def default_legacy_profile():
     """Keep existing tests deterministic unless explicitly overridden."""
@@ -264,6 +280,8 @@ def test_push_retrieval_step_none():
 
 def test_push_file_deletable_by_viewer_true():
     """Test that deletable_by_viewer is set to True when --deletable is used in push-file."""
+    configure_api_credentials()
+
     with (
         patch("pwpush.__main__.make_request") as mock_request,
         patch("builtins.open", create=True) as mock_open,
@@ -298,6 +316,8 @@ def test_push_file_deletable_by_viewer_true():
 
 def test_push_file_deletable_by_viewer_false():
     """Test that deletable_by_viewer is set to False when --no-deletable is used in push-file."""
+    configure_api_credentials()
+
     with (
         patch("pwpush.__main__.make_request") as mock_request,
         patch("builtins.open", create=True) as mock_open,
@@ -332,6 +352,8 @@ def test_push_file_deletable_by_viewer_false():
 
 def test_push_file_deletable_by_viewer_none():
     """Test that deletable_by_viewer is not set when no flag is provided in push-file."""
+    configure_api_credentials()
+
     # Reset config values to ensure clean test state
     from pwpush.commands.config import user_config
 
@@ -372,6 +394,8 @@ def test_push_file_deletable_by_viewer_none():
 
 def test_push_file_retrieval_step_true():
     """Test that retrieval_step is set to True when --retrieval-step is used in push-file."""
+    configure_api_credentials()
+
     with (
         patch("pwpush.__main__.make_request") as mock_request,
         patch("builtins.open", create=True) as mock_open,
@@ -406,6 +430,8 @@ def test_push_file_retrieval_step_true():
 
 def test_push_file_retrieval_step_false():
     """Test that retrieval_step is set to False when --no-retrieval-step is used in push-file."""
+    configure_api_credentials()
+
     with (
         patch("pwpush.__main__.make_request") as mock_request,
         patch("builtins.open", create=True) as mock_open,
@@ -442,6 +468,8 @@ def test_push_file_retrieval_step_false():
 
 def test_push_file_retrieval_step_none():
     """Test that retrieval_step is not set when no flag is provided in push-file."""
+    configure_api_credentials()
+
     # Reset config values to ensure clean test state
     from pwpush.commands.config import user_config
 
@@ -496,6 +524,8 @@ def test_pretty_output_fix():
 
 def test_file_not_found_error_handling():
     """Test that file not found errors are handled properly."""
+    configure_api_credentials()
+
     result = runner.invoke(app, ["push-file", "nonexistent-file.txt"])
 
     assert result.exit_code == 1
@@ -602,6 +632,38 @@ def test_list_prefers_v2_endpoint_when_profile_is_v2() -> None:
         assert mock_request.call_args_list[0].args[1] == "/api/v2/pushes/active"
 
 
+def test_list_without_api_token_fails_before_request() -> None:
+    """Test list requires an API token before any API work."""
+    clear_api_token()
+
+    with (
+        patch("pwpush.__main__.current_api_profile") as mock_profile,
+        patch("pwpush.__main__.make_request") as mock_request,
+    ):
+        result = runner.invoke(app, ["list"])
+
+        assert result.exit_code == 1
+        assert "requires an API token" in result.stdout
+        mock_profile.assert_not_called()
+        mock_request.assert_not_called()
+
+
+def test_audit_without_api_token_fails_before_request() -> None:
+    """Test audit requires an API token before any API work."""
+    clear_api_token()
+
+    with (
+        patch("pwpush.__main__.current_api_profile") as mock_profile,
+        patch("pwpush.__main__.make_request") as mock_request,
+    ):
+        result = runner.invoke(app, ["audit", "abc123"])
+
+        assert result.exit_code == 1
+        assert "requires an API token" in result.stdout
+        mock_profile.assert_not_called()
+        mock_request.assert_not_called()
+
+
 def test_push_uses_v2_paths_and_payload_shape() -> None:
     """Test push command uses v2 endpoint and payload envelope."""
     with (
@@ -640,6 +702,8 @@ def test_push_uses_v2_paths_and_payload_shape() -> None:
 
 def test_push_file_uses_v2_paths_payload_and_upload_key() -> None:
     """Test push-file command uses v2 endpoint and multipart key mapping."""
+    configure_api_credentials()
+
     with (
         patch("pwpush.__main__.current_api_profile", return_value="v2"),
         patch("pwpush.__main__.make_request") as mock_request,
@@ -676,6 +740,22 @@ def test_push_file_uses_v2_paths_payload_and_upload_key() -> None:
         )
 
 
+def test_push_file_without_api_token_fails_before_request() -> None:
+    """Test push-file requires an API token before any API work."""
+    clear_api_token()
+
+    with (
+        patch("pwpush.__main__.current_api_profile") as mock_profile,
+        patch("pwpush.__main__.make_request") as mock_request,
+    ):
+        result = runner.invoke(app, ["push-file", "test-file.txt"])
+
+        assert result.exit_code == 1
+        assert "requires an API token" in result.stdout
+        mock_profile.assert_not_called()
+        mock_request.assert_not_called()
+
+
 def test_expire_uses_v2_endpoint() -> None:
     """Test expire command uses v2 route when profile is v2."""
     with (
@@ -691,6 +771,18 @@ def test_expire_uses_v2_endpoint() -> None:
 
         assert result.exit_code == 0
         assert mock_request.call_args_list[0].args[1] == "/api/v2/pushes/abc123"
+
+
+def test_expire_without_token_shows_help() -> None:
+    """Test expire command shows help instead of making a request without a token."""
+    with patch("pwpush.__main__.make_request") as mock_request:
+        result = runner.invoke(app, ["expire"])
+
+        assert result.exit_code == 0
+        assert "Usage:" in result.stdout
+        assert "Expire a push." in result.stdout
+        assert "URL_TOKEN" in result.stdout
+        mock_request.assert_not_called()
 
 
 def test_audit_supports_v2_logs_shape() -> None:
@@ -723,3 +815,24 @@ def test_audit_supports_v2_logs_shape() -> None:
 
         assert result.exit_code == 0
         assert mock_request.call_args_list[0].args[1] == "/api/v2/pushes/abc123/audit"
+
+
+def test_audit_without_token_shows_help() -> None:
+    """Test audit command shows help instead of checking auth without a token."""
+    with patch("pwpush.__main__.make_request") as mock_request:
+        result = runner.invoke(app, ["audit"])
+
+        assert result.exit_code == 0
+        assert "Usage:" in result.stdout
+        assert "Show the audit log for the given push." in result.stdout
+        assert "Requires login with an API token." in result.stdout
+        assert "URL_TOKEN" in result.stdout
+        mock_request.assert_not_called()
+
+
+def test_audit_help_mentions_api_token_requirement() -> None:
+    """Test audit help explains authentication requirements."""
+    result = runner.invoke(app, ["audit", "--help"])
+
+    assert result.exit_code == 0
+    assert "Requires login with an API token." in result.stdout

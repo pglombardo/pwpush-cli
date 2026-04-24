@@ -6,6 +6,7 @@ from typer.testing import CliRunner
 
 import pwpush
 from pwpush.__main__ import app, generate_secret, genpass
+from pwpush.commands.config import user_config
 from pwpush.utils import check_secret_conditions
 
 # import the mocks
@@ -53,6 +54,9 @@ def test_basic_push_passphrase(monkeypatch):
 
 
 def test_file_push(monkeypatch):
+    monkeypatch.setitem(user_config["instance"], "email", "user@example.test")
+    monkeypatch.setitem(user_config["instance"], "token", "token-value")
+
     monkeypatch.setattr(
         requests, "post", build_request_mock({"url_token": "super-token"})
     )
