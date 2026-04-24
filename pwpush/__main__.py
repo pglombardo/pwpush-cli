@@ -30,7 +30,8 @@ from pwpush.api.endpoints import (
 )
 from pwpush.commands import config
 from pwpush.commands.config import save_config, user_config
-from pwpush.options import cli_options
+from pwpush.config_wizard import run_config_wizard
+from pwpush.options import cli_options, config_file_exists
 from pwpush.utils import check_secret_conditions, parse_boolean
 
 
@@ -298,6 +299,15 @@ def load_cli_options(
     if ctx.invoked_subcommand is None:
         if help:
             show_help_with_config()
+        elif not config_file_exists():
+            should_run_wizard = typer.confirm(
+                "No configuration file found. Run the setup wizard now?",
+                default=True,
+            )
+            if should_run_wizard:
+                run_config_wizard()
+            else:
+                show_welcome_screen()
         else:
             show_welcome_screen()
 

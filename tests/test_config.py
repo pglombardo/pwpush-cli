@@ -3,9 +3,53 @@ import json
 from typer.testing import CliRunner
 
 from pwpush.__main__ import app
-from pwpush.options import save_config, user_config
+from pwpush.options import default_config, load_config, save_config, user_config
 
 runner = CliRunner()
+
+
+def reset_config_file(monkeypatch, config_file):
+    monkeypatch.setattr("pwpush.options.user_config_file", config_file)
+    monkeypatch.setattr("pwpush.commands.config.user_config_file", config_file)
+    monkeypatch.setattr("pwpush.config_wizard.user_config_file", config_file)
+    user_config.clear()
+    user_config.read_dict(default_config)
+
+
+def test_load_config_uses_defaults_without_writing_file(monkeypatch, tmp_path):
+    config_file = tmp_path / "config.ini"
+    reset_config_file(monkeypatch, config_file)
+    user_config.clear()
+
+    load_config()
+
+    assert user_config["instance"]["url"] == "https://eu.pwpush.com"
+    assert user_config["cli"]["pretty"] == "False"
+    assert not config_file.exists()
+
+
+def test_save_config_creates_parent_directory(monkeypatch, tmp_path):
+    config_file = tmp_path / "nested" / "config.ini"
+    reset_config_file(monkeypatch, config_file)
+
+    save_config()
+
+    assert config_file.exists()
+
+
+def test_load_config_validates_partial_existing_config(monkeypatch, tmp_path):
+    config_file = tmp_path / "config.ini"
+    reset_config_file(monkeypatch, config_file)
+    config_file.write_text("[instance]\nurl = https://partial.example\n")
+    user_config.clear()
+
+    load_config()
+
+    assert user_config["instance"]["url"] == "https://partial.example"
+    assert user_config["instance"]["token"] == "Not Set"
+    assert user_config["expiration"]["expire_after_days"] == "Not Set"
+    assert user_config["cli"]["debug"] == "False"
+    assert config_file.exists()
 
 
 def test_config_defaults_to_show():

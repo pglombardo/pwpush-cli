@@ -1,7 +1,6 @@
 from typing import Any
 
 import configparser
-import os
 from pathlib import Path
 
 import typer
@@ -12,7 +11,7 @@ user_config = configparser.ConfigParser()
 user_config_dir = Path(typer.get_app_dir("pwpush"))
 user_config_file = user_config_dir.joinpath("config.ini")
 
-cli_options = {"json": False, "verbose": False, "debug": False}
+cli_options = {"json": False, "verbose": False, "pretty": False, "debug": False}
 default_config: dict[str, dict[str, Any]] = {"instance": {}}
 default_config["instance"]["url"] = "https://eu.pwpush.com"
 default_config["instance"]["email"] = "Not Set"
@@ -35,54 +34,59 @@ default_config["cli"] = {
 }
 
 
-def load_config():
+def config_file_exists() -> bool:
     """
-    Load existing config or write out a new default one (and use that)
+    Check whether the user configuration file exists.
     """
-    if os.path.exists(user_config_file) is True:
+    return user_config_file.exists()
+
+
+def load_config() -> None:
+    """
+    Load existing config or defaults without creating a config file.
+    """
+    user_config.clear()
+    if config_file_exists():
         user_config.read(user_config_file)
 
-        validate_user_config()
+        if validate_user_config():
+            save_config()
     else:
-        # No config file exists; Write out a new file with default settings
+        # No config file exists; use defaults in memory until explicitly saved.
         user_config.read_dict(default_config)
 
-        # Write out default settings to a new config file
-        if os.path.exists(user_config_dir) is False:
-            Path.mkdir(user_config_dir)
 
-        with open(user_config_file, "x") as file:
-            user_config.write(file)
-
-
-def validate_user_config():
+def validate_user_config() -> bool:
     """
     Validate `user_config` and assure that all default keys are set
-    and available.
+    and available. Returns True when missing values were added.
     """
+    changed = False
+
     if "instance" not in user_config:
         user_config["instance"] = {}
+        changed = True
     if "expiration" not in user_config:
         user_config["expiration"] = {}
+        changed = True
     if "cli" not in user_config:
         user_config["cli"] = {}
+        changed = True
 
-    # Merge the default config into the user config correcting any missing keys
-    # This pattern supports Python >=3.5
-    user_config["instance"] = {**default_config["instance"], **user_config["instance"]}
-    user_config["expiration"] = {
-        **default_config["expiration"],
-        **user_config["expiration"],
-    }
-    user_config["cli"] = {**default_config["cli"], **user_config["cli"]}
-    save_config()
+    for section, defaults in default_config.items():
+        for key, value in defaults.items():
+            if key not in user_config[section]:
+                user_config[section][key] = str(value)
+                changed = True
+
+    return changed
 
 
-def save_config():
+def save_config() -> None:
     """
     Save `user_config` out to file
     """
-    # Write out default settings
+    user_config_file.parent.mkdir(parents=True, exist_ok=True)
     with open(user_config_file, "w") as file:
         user_config.write(file)
 

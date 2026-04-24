@@ -61,3 +61,22 @@ def test_detect_api_profile_caches_results_per_base_url() -> None:
         assert first == API_PROFILE_V2
         assert second == API_PROFILE_V2
         assert mock_get.call_count == 1
+
+
+def test_detect_api_profile_uses_bearer_token_without_email() -> None:
+    clear_profile_cache()
+    with patch("pwpush.api.capabilities.requests.get") as mock_get:
+        response = MagicMock()
+        response.status_code = 200
+        mock_get.return_value = response
+
+        profile = detect_api_profile(
+            base_url="https://example.test",
+            email="Not Set",
+            token="test-token",
+        )
+
+        assert profile == API_PROFILE_V2
+        assert mock_get.call_args.kwargs["headers"] == {
+            "Authorization": "Bearer test-token"
+        }

@@ -28,7 +28,7 @@ def detect_api_profile(
 
     probe_url = absolute_url(base_url, "/api/v2/version")
     headers: dict[str, str] = {}
-    if email != "Not Set" and token != "Not Set":
+    if token.strip() and token != "Not Set":
         headers = {"Authorization": f"Bearer {token}"}
 
     try:

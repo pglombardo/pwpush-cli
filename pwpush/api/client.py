@@ -14,16 +14,17 @@ def normalize_base_url(url: str) -> str:
 
 def build_auth_headers(email: str, token: str) -> dict[str, str]:
     """Build the full set of supported auth headers."""
-    valid_email = email != "Not Set"
-    valid_token = token != "Not Set"
-    if not (valid_email and valid_token):
+    valid_email = bool(email.strip()) and email != "Not Set"
+    valid_token = bool(token.strip()) and token != "Not Set"
+    if not valid_token:
         return {}
 
-    return {
-        "X-User-Email": email,
-        "X-User-Token": token,
-        "Authorization": f"Bearer {token}",
-    }
+    headers = {"Authorization": f"Bearer {token}"}
+    if valid_email:
+        headers["X-User-Email"] = email
+        headers["X-User-Token"] = token
+
+    return headers
 
 
 def absolute_url(base_url: str, path: str) -> str:
