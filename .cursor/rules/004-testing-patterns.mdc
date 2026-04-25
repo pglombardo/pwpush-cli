@@ -1,0 +1,284 @@
+# Testing Patterns
+
+description: Patterns and best practices for writing tests in pwpush-cli
+glob: "tests/*.py"
+
+## Test File Organization
+
+- `tests/__init__.py` - Shared fixtures and mock utilities
+- `tests/conftest.py` - Pytest configuration and global fixtures
+- `tests/test_<module>.py` - Tests for specific modules
+- `tests/test_<feature>_commands.py` - Tests for CLI commands
+
+## Essential Fixtures
+
+### From tests/__init__.py
+
+```python
+@pytest.fixture
+def mock_make_request():
+    """Mock make_request for commands with legacy API profile."""
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="legacy"),
+        patch("pwpush.__main__.make_request") as mock,
+        patch(
+            "pwpush.commands.push.detect_api_capabilities",
+            return_value={"api_version": None, "features": {}},
+        ),
+    ):
+        mock.return_value.status_code = 201
+        mock.return_value.json.return_value = {
+            "url_token": "test-token",
+            "url": "https://pwpush.test/en/p/test-url",
+        }
+        yield mock
+```
+
+### From tests/conftest.py
+
+```python
+@pytest.fixture(autouse=True)
+def isolate_config_file(monkeypatch, tmp_path):
+    """Redirect user_config_file to a temporary path for all tests."""
+    config_file = tmp_path / "config.ini"
+    monkeypatch.setattr("pwpush.options.user_config_file", config_file)
+    monkeypatch.setattr("pwpush.commands.config.user_config_file", config_file)
+    # Clear and reload config with defaults
+    user_config.clear()
+    user_config.read_dict(default_config)
+    yield config_file
+```
+
+## CLI Command Testing Pattern
+
+```python
+"""Tests for feature commands."""
+
+from unittest.mock import patch
+import pytest
+from typer.testing import CliRunner
+from pwpush.__main__ import app
+from pwpush.commands.config import user_config
+from tests import *
+
+runner = CliRunner()
+
+
+@pytest.fixture
+def mock_feature_enabled():
+    """Mock feature_enabled to return True."""
+    with patch("pwpush.commands.feature.feature_enabled", return_value=True):
+        yield
+
+
+@pytest.fixture
+def mock_feature_disabled():
+    """Mock feature_enabled to return False."""
+    with patch("pwpush.commands.feature.feature_enabled", return_value=False):
+        yield
+
+
+@pytest.fixture
+def mock_feature_make_request():
+    """Mock make_request for feature commands with v2 API profile."""
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="v2"),
+        patch("pwpush.__main__.make_request") as mock,
+        patch(
+            "pwpush.commands.feature.detect_api_capabilities",
+            return_value={
+                "api_version": "2.1.0",
+                "features": {"commercial": True, "feature_name": True},
+            },
+        ),
+    ):
+        mock.return_value.status_code = 201
+        mock.return_value.json.return_value = {
+            "url_token": "feature-token",
+            "url": "https://pwpush.test/en/f/feature-url",
+        }
+        yield mock
+
+
+def _get_post_call(mock_make_request):
+    """Helper to find the POST call from make_request mock by HTTP method.
+    
+    Returns a tuple of (positional_args, keyword_args) for the POST call.
+    """
+    for call in mock_make_request.call_args_list:
+        args = call[0] if call[0] else ()
+        kwargs = call[1] if call[1] else {}
+        if args and args[0] == "POST":
+            return (args, kwargs)
+        if kwargs.get("method") == "POST":
+            return (args, kwargs)
+    return None
+
+
+def _get_request_data_from_call(post_call):
+    """Extract request data from a mock call."""
+    if post_call is None:
+        return None
+    args, kwargs = post_call
+    return kwargs.get("post_data", {})
+
+
+# Test: Authentication required
+def test_feature_unauthenticated():
+    """Test that feature command requires authentication."""
+    user_config["instance"]["token"] = "Not Set"
+    user_config["instance"]["email"] = "Not Set"
+    
+    result = runner.invoke(app, ["feature", "--arg", "value"])
+    assert result.exit_code == 1
+    assert "'feature' requires an API token" in result.output
+
+
+# Test: Feature not available
+def test_feature_api_not_available(mock_feature_make_request, mock_feature_disabled):
+    """Test error when feature API is not available."""
+    user_config["instance"]["token"] = "valid-token"
+    user_config["instance"]["email"] = "user@example.com"
+    
+    result = runner.invoke(app, ["feature", "--arg", "value"])
+    assert result.exit_code == 1
+    assert "not available" in result.output
+
+
+# Test: Happy path
+def test_feature_success(mock_feature_make_request, mock_feature_enabled):
+    """Test successful feature command."""
+    user_config["instance"]["token"] = "valid-token"
+    user_config["instance"]["email"] = "user@example.com"
+    
+    result = runner.invoke(app, ["feature", "value"])
+    assert result.exit_code == 0
+    assert "Success" in result.output
+
+
+# Test: Verify request data
+def test_feature_request_data(mock_feature_make_request, mock_feature_enabled):
+    """Test that request is made with correct data."""
+    user_config["instance"]["token"] = "valid-token"
+    
+    result = runner.invoke(app, ["feature", "test-value"])
+    assert result.exit_code == 0
+    
+    post_call = _get_post_call(mock_feature_make_request)
+    assert post_call is not None
+    args, kwargs = post_call
+    assert args[1] == "/api/v2/features"  # Check path
+    
+    post_data = _get_request_data_from_call(post_call)
+    assert post_data["resource"]["payload"] == "test-value"
+
+
+# Test: File operations with tmp_path
+def test_feature_with_file(mock_feature_make_request, mock_feature_enabled, tmp_path):
+    """Test feature with file input."""
+    user_config["instance"]["token"] = "valid-token"
+    
+    # Create temp file
+    content_file = tmp_path / "content.txt"
+    content_file.write_text("File content")
+    
+    result = runner.invoke(app, ["feature", "--content", str(content_file)])
+    assert result.exit_code == 0
+
+
+# Test: JSON output
+def test_feature_json_output(mock_feature_make_request, mock_feature_enabled):
+    """Test JSON output mode."""
+    user_config["instance"]["token"] = "valid-token"
+    
+    result = runner.invoke(app, ["feature", "value", "--json"])
+    assert result.exit_code == 0
+    assert '"url":' in result.output
+
+
+# Test: Error handling
+def test_feature_api_error(mock_feature_make_request, mock_feature_enabled):
+    """Test handling of API error response."""
+    user_config["instance"]["token"] = "valid-token"
+    
+    # Mock error response
+    mock_feature_make_request.return_value.status_code = 422
+    mock_feature_make_request.return_value.text = "Error"
+    mock_feature_make_request.return_value.json.return_value = {"error": "Invalid data"}
+    
+    result = runner.invoke(app, ["feature", "value"])
+    assert result.exit_code == 1
+    assert "Invalid data" in result.output
+```
+
+## Testing Capability Detection
+
+```python
+def test_feature_enabled_helper():
+    """Test the feature_enabled helper function."""
+    from pwpush.api.capabilities import feature_enabled
+
+    # Enabled - API 2.1 with feature and commercial
+    assert feature_enabled({
+        "api_version": "2.1.0",
+        "features": {"commercial": True, "feature_name": True},
+    })
+
+    # Disabled - missing commercial
+    assert not feature_enabled({
+        "api_version": "2.1.0",
+        "features": {"commercial": False, "feature_name": True},
+    })
+
+    # Disabled - missing feature flag
+    assert not feature_enabled({
+        "api_version": "2.1.0",
+        "features": {"commercial": True},
+    })
+
+    # Disabled - old API version
+    assert not feature_enabled({
+        "api_version": "1.0.0",
+        "features": {"commercial": True, "feature_name": True},
+    })
+
+    # Disabled - None
+    assert not feature_enabled(None)
+
+    # Disabled - empty dict
+    assert not feature_enabled({})
+```
+
+## Common Test Patterns
+
+### Testing with User Input
+```python
+result = runner.invoke(app, ["command"], input="user-input\n")
+```
+
+### Testing with Piped Input
+```python
+result = runner.invoke(app, ["push"], input="secret-from-stdin")
+```
+
+### Testing Config Options
+```python
+user_config["expiration"]["expire_after_days"] = "7"
+user_config["expiration"]["expire_after_views"] = "10"
+```
+
+### Testing CLI Options
+```python
+result = runner.invoke(app, ["command", "--json", "--pretty"])
+```
+
+## Best Practices
+
+1. **Always mock `detect_api_capabilities`** when testing commands that check features
+2. **Always set auth token** for authenticated commands via `user_config["instance"]["token"]`
+3. **Use `tmp_path`** fixture for file operations
+4. **Use `monkeypatch`** for modifying config values
+5. **Test both success and error cases**
+6. **Test JSON output mode** for all commands
+7. **Test unauthenticated access** for protected commands
+8. **Verify request data** using `_get_post_call()` helper

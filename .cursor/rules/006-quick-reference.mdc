@@ -1,0 +1,165 @@
+# Quick Reference
+
+description: Quick reference for common tasks and code snippets
+glob: "**/*.py"
+
+## Adding a New CLI Command
+
+1. **Create command module** `pwpush/commands/newcommand.py`:
+   - Copy structure from existing command (e.g., `request.py`)
+   - Implement `newcommand_cmd()` function
+   - Add `HELP_TEXT` constant
+   - Use private helpers for `__main__` imports
+
+2. **Add to `__main__.py`**:
+   - Import `HELP_TEXT` and command function
+   - Register with `@app.command(help=HELP_TEXT)`
+   - Update welcome/help screens if needed
+
+3. **Add API endpoints** (if needed) `pwpush/api/endpoints.py`:
+   - Add `newcommand_create_path()`
+   - Add `newcommand_preview_path()`
+   - Add `adapt_newcommand_payload_for_profile()`
+
+4. **Add capability detection** (if Pro feature) `pwpush/api/capabilities.py`:
+   - Add `newcommand_enabled()` function
+   - Follow pattern of `requests_enabled()`
+
+5. **Add tests** `tests/test_newcommand_commands.py`:
+   - Create fixtures: `mock_newcommand_enabled`, `mock_newcommand_make_request`
+   - Test: unauthenticated, feature unavailable, success cases, JSON output
+   - Add capability tests in `tests/test_api_capabilities.py`
+
+6. **Update README.md**:
+   - Add to Quick Start or Pro Features section
+   - Include usage examples
+
+## Common Code Snippets
+
+### Check Authentication
+```python
+_require_api_token("command-name")
+```
+
+### Check Pro Feature
+```python
+capabilities = detect_api_capabilities(
+    base_url=user_config["instance"]["url"],
+    email=user_config["instance"]["email"],
+    token=user_config["instance"]["token"],
+    debug=_debug_output(),
+)
+if not feature_enabled(capabilities):
+    _error_json("Feature not available")
+    raise typer.Exit(1)
+```
+
+### Make API Request
+```python
+response = _make_request(
+    "POST",
+    path,
+    post_data=data,
+    on_rate_limit_retry=on_rate_limit_retry,
+)
+```
+
+### Progress Indicator
+```python
+with Progress(
+    SpinnerColumn(),
+    TextColumn("[progress.description]{task.description}"),
+    transient=True,
+) as progress:
+    progress.add_task(description="Processing...", total=None)
+    # ... make request
+```
+
+### Handle Response
+```python
+if response.status_code == 201:
+    body = response.json()
+    if _json_output():
+        print(json_module.dumps(body, indent=2 if _pretty_output() else None))
+    else:
+        rprint(f"Success: {body['url']}")
+else:
+    _error_json("Error message", response.status_code)
+    raise typer.Exit(1)
+```
+
+### Error Handling
+```python
+except FileNotFoundError:
+    _error_json(f"File '{path}' not found.")
+    raise typer.Exit(1)
+except PermissionError:
+    _error_json(f"Permission denied accessing '{path}'.")
+    raise typer.Exit(1)
+```
+
+## Testing Snippets
+
+### Basic Command Test
+```python
+def test_command_success(mock_make_request):
+    user_config["instance"]["token"] = "valid-token"
+    result = runner.invoke(app, ["command", "arg"])
+    assert result.exit_code == 0
+```
+
+### JSON Output Test
+```python
+def test_command_json(mock_make_request):
+    user_config["instance"]["token"] = "valid-token"
+    result = runner.invoke(app, ["command", "--json"])
+    assert '"url":' in result.output
+```
+
+### File Test with tmp_path
+```python
+def test_command_with_file(mock_make_request, tmp_path):
+    user_config["instance"]["token"] = "valid-token"
+    file_path = tmp_path / "test.txt"
+    file_path.write_text("content")
+    result = runner.invoke(app, ["command", "--file", str(file_path)])
+    assert result.exit_code == 0
+```
+
+### Verify Request Data
+```python
+def test_command_request_data(mock_make_request):
+    user_config["instance"]["token"] = "valid-token"
+    runner.invoke(app, ["command", "value"])
+    
+    post_call = _get_post_call(mock_make_request)
+    args, kwargs = post_call
+    post_data = kwargs.get("post_data", {})
+    assert post_data["resource"]["field"] == "value"
+```
+
+## Makefile Commands
+
+```bash
+make test        # Run pytest
+make lint        # Run all linting (black, isort, mypy, etc.)
+make codestyle   # Auto-format code
+make check       # Run tests and linting
+```
+
+## Project Standards
+
+- **Line length**: 88 characters (Black default)
+- **Python version**: 3.10+
+- **Type hints**: Required for all functions
+- **Docstrings**: Google style
+- **Tests**: Use pytest with fixtures from `tests/__init__.py`
+- **Error handling**: Use `_error_json()` for consistent output
+- **Output**: Rich console for human, JSON for scripts
+
+## Useful Links
+
+- Password Pusher: https://pwpush.com
+- Documentation: https://docs.pwpush.com
+- Typer docs: https://typer.tiangolo.com
+- Rich docs: https://rich.readthedocs.io

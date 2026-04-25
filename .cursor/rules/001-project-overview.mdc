@@ -1,0 +1,76 @@
+# Project Overview: pwpush-cli
+
+description: Essential context about the Password Pusher CLI project structure and architecture
+glob: "**/*.py"
+
+## Project Description
+
+This is a Python CLI tool for Password Pusher - a secure password/secret/file sharing service. The CLI allows users to push secrets with expiration controls to Password Pusher instances.
+
+## Key Technologies
+
+- **Python 3.10+** (minimum requirement)
+- **Typer** - CLI framework with rich output
+- **Rich** - Beautiful terminal output with tables and formatting
+- **Requests** - HTTP client for API communication
+- **Poetry** - Dependency management and packaging
+- **Pytest** - Testing framework with CliRunner for CLI testing
+
+## Project Structure
+
+```
+pwpush-cli/
+├── pwpush/
+│   ├── __init__.py          # Package initialization and version
+│   ├── __main__.py          # Main CLI application entry point (Typer app)
+│   ├── api/
+│   │   ├── capabilities.py  # API feature detection (v2 vs legacy)
+│   │   ├── client.py        # HTTP client with retry logic
+│   │   └── endpoints.py     # API endpoint paths and payload adapters
+│   ├── commands/
+│   │   ├── auth.py          # Login/logout commands
+│   │   ├── config.py        # Configuration management
+│   │   ├── manage.py        # List, audit, expire commands
+│   │   ├── push.py          # Push and push-file commands
+│   │   └── request.py       # Request command (Pro feature)
+│   ├── options.py           # CLI options and user configuration
+│   └── utils.py             # Utility functions (password generation, etc.)
+├── tests/
+│   ├── __init__.py          # Test fixtures and mocks
+│   ├── conftest.py          # Pytest configuration
+│   └── test_*.py            # Test modules
+└── README.md
+```
+
+## Configuration System
+
+User config stored at `~/.config/pwpush/config.ini` with sections:
+- `[instance]`: url, email, token, api_profile, account_id
+- `[expiration]`: expire_after_days, expire_after_views, retrieval_step, deletable_by_viewer
+- `[cli]`: json, verbose, pretty, debug
+- `[pro]`: notify, notify_locale
+
+Config is managed via `configparser.ConfigParser` in `pwpush/options.py`.
+
+## API Compatibility
+
+The CLI auto-negotiates between API v2 and legacy endpoints:
+- Probes `/api/v2/version` on first run
+- Uses **API v2** if available (modern, feature-rich)
+- Falls back to **legacy** endpoints for older instances
+- Caches the result for 1 hour
+
+## Authentication
+
+- Uses `Authorization: Bearer <token>` header
+- Also supports `X-User-Email` and `X-User-Token` for backward compatibility
+- Token required for: push-file, list, audit, expire, request commands
+
+## Pro vs OSS Features
+
+Some features are only available on Password Pusher Pro/Enterprise:
+- `request` command (requires API v2.1+ with commercial edition)
+- Email notifications (`--notify`)
+- Multiple accounts per API token
+
+Always check `capabilities.requests_enabled()` and `capabilities.email_notifications_enabled()` before using Pro features.

@@ -1,0 +1,205 @@
+# Implementing CLI Commands
+
+description: Patterns and best practices for implementing new CLI commands
+glob: "pwpush/commands/*.py"
+
+## Command Module Structure
+
+Each command module follows this pattern:
+
+```python
+"""Command description for module docstring."""
+
+from typing import Any
+import json as json_module
+import typer
+from rich import print as rprint
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn
+
+from pwpush.api.capabilities import detect_api_capabilities, specific_feature_enabled
+from pwpush.api.endpoints import specific_endpoint_functions
+from pwpush.commands.config import user_config
+from pwpush.options import cli_options
+from pwpush.utils import parse_boolean
+
+console = Console()
+
+HELP_TEXT = """Help text with [dim]formatting[/] and [code]examples[/code]."""
+
+
+# Private helper functions for output mode checks
+def _json_output() -> bool:
+    """Check if JSON output is enabled."""
+    user_config_json = parse_boolean(user_config["cli"]["json"])
+    return cli_options["json"] or user_config_json
+
+
+def _pretty_output() -> bool:
+    """Check if pretty output is enabled."""
+    user_config_pretty = parse_boolean(user_config["cli"]["pretty"])
+    return cli_options["pretty"] or user_config_pretty
+
+
+def _debug_output() -> bool:
+    """Check if debug output is enabled."""
+    user_config_debug = parse_boolean(user_config["cli"]["debug"])
+    return cli_options["debug"] or user_config_debug
+
+
+# Private helper to get current API profile
+def _current_api_profile() -> str:
+    """Get the current API profile."""
+    from pwpush.__main__ import current_api_profile
+    return current_api_profile()
+
+
+# Private helper to require API token
+def _require_api_token(operation: str) -> None:
+    """Require a configured API token before authenticated operations."""
+    from pwpush.__main__ import require_api_token
+    require_api_token(operation)
+
+
+# Private helper to make API requests
+def _make_request(method, path, post_data=None, upload_files=None, **kwargs):
+    """Make an API request with the given parameters."""
+    from pwpush.__main__ import make_request
+    return make_request(method, path, post_data=post_data, upload_files=upload_files, **kwargs)
+
+
+# Private helper for CLI options update
+def _update_cli_options(json: bool = False, verbose: bool = False, pretty: bool = False, debug: bool = False) -> None:
+    """Update CLI options from command-line flags."""
+    from pwpush.__main__ import update_cli_options
+    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
+
+
+# Private helper for error output
+def _error_json(message: str, status_code: int | None = None) -> None:
+    """Print an error message in JSON format."""
+    from pwpush.__main__ import error_json
+    error_json(message, status_code)
+
+
+# Main command function
+def command_cmd(ctx: typer.Context, ...) -> None:
+    """Main command implementation."""
+    _update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
+    
+    # Check authentication if required
+    _require_api_token("command-name")
+    
+    # Check API capabilities for Pro features
+    api_profile = _current_api_profile()
+    capabilities = detect_api_capabilities(
+        base_url=user_config["instance"]["url"],
+        email=user_config["instance"]["email"],
+        token=user_config["instance"]["token"],
+        debug=_debug_output(),
+    )
+    
+    if not specific_feature_enabled(capabilities):
+        if _json_output():
+            _error_json("Feature not available...")
+        else:
+            rprint("[red]Error: Feature not available...[/red]")
+        raise typer.Exit(1)
+    
+    # Build payload
+    data: dict[str, dict[str, Any]] = {"resource": {}}
+    data["resource"]["payload"] = ...
+    
+    # Add expiration options from config or CLI
+    if days:
+        data["resource"]["expire_after_days"] = days
+    elif user_config["expiration"]["expire_after_days"] != "Not Set":
+        data["resource"]["expire_after_days"] = user_config["expiration"]["expire_after_days"]
+    
+    # Rate limit callback
+    def on_rate_limit_retry(attempt: int, delay: float, response: Any) -> None:
+        if not _json_output():
+            rprint(f"[yellow]Rate limit exceeded. Retrying in {delay:.1f}s...[/yellow]")
+    
+    # Progress indicator
+    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as progress:
+        progress.add_task(description="Processing...", total=None)
+        
+        # Make request
+        response = _make_request("POST", path, post_data=data, on_rate_limit_retry=on_rate_limit_retry)
+    
+    # Handle response
+    if response.status_code == 201:
+        body = response.json()
+        if _json_output():
+            dumps_kwargs: dict[str, Any] = {}
+            if _pretty_output():
+                dumps_kwargs["indent"] = 2
+                dumps_kwargs["sort_keys"] = True
+            print(json_module.dumps(body, **dumps_kwargs))
+        else:
+            rprint(f"Success: {body['url']}")
+    else:
+        error_message = response.text
+        try:
+            error_body = response.json()
+            if isinstance(error_body, dict):
+                error_message = error_body.get("error", response.text)
+        except json_module.JSONDecodeError:
+            pass
+        _error_json(error_message, response.status_code)
+        raise typer.Exit(1)
+```
+
+## Key Patterns
+
+1. **Always use private helper functions** that wrap imports from `__main__` to avoid circular imports
+2. **Always include HELP_TEXT** constant for command help
+3. **Check authentication** with `_require_api_token()` for protected commands
+4. **Check API capabilities** with appropriate `*_enabled()` functions for Pro features
+5. **Use Rich for output** - tables, colors, formatting
+6. **Support JSON output** via `_json_output()` and `_pretty_output()` checks
+7. **Use Progress indicators** for network operations
+8. **Handle rate limits** with `on_rate_limit_retry` callback
+9. **Handle errors gracefully** with proper JSON/text output based on flags
+
+## Command Registration in __main__.py
+
+```python
+@app.command(help=MODULE_HELP_TEXT)
+def command_name(
+    ctx: typer.Context,
+    # Arguments
+    positional_arg: str = typer.Argument("", help="Description"),
+    # Options
+    option_name: str | None = typer.Option(None, "--option", help="Description"),
+    boolean_flag: bool | None = typer.Option(None, "--flag", help="Description"),
+    # Standard output options
+    json: bool = typer.Option(False, "--json", "-j", help="Output results in JSON format."),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output."),
+    pretty: bool = typer.Option(False, "--pretty", "-p", help="Pretty-print JSON output."),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
+) -> None:
+    """Command description."""
+    command_cmd(ctx=ctx, positional_arg=positional_arg, option_name=option_name, ...)
+```
+
+## Error Handling
+
+Always use `_error_json()` for errors - it handles both JSON and text output modes:
+
+```python
+if error_condition:
+    _error_json("Error message", status_code=400)
+    raise typer.Exit(1)
+```
+
+For authentication errors, use the standard pattern:
+```python
+if token == "Not Set":
+    if _json_output():
+        _error_json("'command' requires an API token. Run 'pwpush login'...")
+    else:
+        rprint("[red]Error: 'command' requires an API token...[/red]")
+    raise typer.Exit(1)
+```

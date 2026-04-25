@@ -1,0 +1,187 @@
+# API Integration Patterns
+
+description: Patterns for API endpoint paths, payload adapters, and capability detection
+glob: "pwpush/api/*.py"
+
+## API Endpoints Module (endpoints.py)
+
+### Endpoint Path Functions
+
+Create functions that return appropriate paths based on API profile:
+
+```python
+def resource_create_path(api_profile: str) -> str:
+    """Return create endpoint for resource."""
+    if api_profile == API_PROFILE_V2:
+        return "/api/v2/resources"
+    return "/legacy.json"
+
+
+def resource_preview_path(api_profile: str, url_token: str) -> str:
+    """Return preview endpoint for created resource."""
+    if api_profile == API_PROFILE_V2:
+        return f"/api/v2/resources/{url_token}/preview"
+    return f"/legacy/{url_token}/preview.json"
+
+
+def resource_expire_path(api_profile: str, url_token: str) -> str:
+    """Return expire endpoint path."""
+    if api_profile == API_PROFILE_V2:
+        return f"/api/v2/resources/{url_token}"
+    return f"/legacy/{url_token}.json"
+```
+
+### Payload Adapters
+
+Convert between legacy and v2 payload formats:
+
+```python
+def adapt_resource_payload_for_profile(
+    payload: dict[str, Any], api_profile: str
+) -> dict[str, Any]:
+    """Convert resource payload between legacy and v2 formats."""
+    if api_profile == API_PROFILE_LEGACY:
+        return payload
+
+    source = payload["resource"]
+    resource_payload: dict[str, Any] = {
+        "payload": source["payload"],
+    }
+    
+    # Copy optional fields if present
+    if "expire_after_views" in source:
+        resource_payload["expire_after_views"] = source["expire_after_views"]
+    if "note" in source:
+        resource_payload["note"] = source["note"]
+    if "deletable_by_viewer" in source:
+        resource_payload["deletable_by_viewer"] = source["deletable_by_viewer"]
+    if "retrieval_step" in source:
+        resource_payload["retrieval_step"] = source["retrieval_step"]
+
+    # Convert days to duration using _DURATION_BY_DAYS mapping
+    if "expire_after_days" in source:
+        days = int(source["expire_after_days"])
+        if days in _DURATION_BY_DAYS:
+            resource_payload["expire_after_duration"] = _DURATION_BY_DAYS[days]
+        else:
+            resource_payload["expire_after_days"] = days
+
+    return {"resource": resource_payload}
+
+
+def adapt_resource_uploads_for_profile(
+    upload_files: dict[str, Any], api_profile: str
+) -> dict[str, Any]:
+    """Rename multipart file key for v2 when required."""
+    if api_profile == API_PROFILE_LEGACY:
+        return upload_files
+    if "resource[files][]" in upload_files:
+        return {"resource[files][]": upload_files["resource[files][]"]}
+    return upload_files
+```
+
+### Duration Mapping
+
+Use the existing `_DURATION_BY_DAYS` mapping for day-to-duration conversion:
+
+```python
+_DURATION_BY_DAYS = {
+    1: 6,    # 1 day -> duration 6
+    2: 7,    # 2 days -> duration 7
+    3: 8,
+    4: 9,
+    5: 10,
+    6: 11,
+    7: 12,
+    14: 13,
+    21: 14,
+    30: 15,
+    60: 16,
+    90: 17,
+}
+```
+
+## Capabilities Module (capabilities.py)
+
+### Feature Detection Functions
+
+Pattern for adding new feature detection:
+
+```python
+def feature_name_enabled(capabilities: dict[str, Any] | None = None) -> bool:
+    """Check if feature is supported.
+
+    Returns True when:
+    - API version >= required_version
+    - features.feature_name == true (for 2.1+)
+    - features.commercial == true (for Pro features)
+
+    Args:
+        capabilities: Dict returned by detect_api_capabilities()
+
+    Returns:
+        bool: True if feature is enabled on this instance
+    """
+    if not capabilities:
+        return False
+
+    version = capabilities.get("api_version")
+    if not version:
+        return False
+
+    # Parse version string
+    try:
+        version_parts = version.split(".")
+        major = int(version_parts[0]) if len(version_parts) > 0 else 0
+        minor = int(version_parts[1]) if len(version_parts) > 1 else 0
+
+        # Check minimum version requirement
+        if major < 2 or (major == 2 and minor < 1):
+            return False
+    except (ValueError, IndexError):
+        return False
+
+    # For API 2.1+, check the features hash
+    if major == 2 and minor >= 1:
+        features = capabilities.get("features", {})
+        # For Pro features, also check commercial flag
+        is_commercial = bool(features.get("commercial", False))
+        feature_available = bool(features.get("feature_name", False))
+        return is_commercial and feature_available
+
+    return False
+```
+
+### Detecting Capabilities
+
+```python
+# In command implementation
+capabilities = detect_api_capabilities(
+    base_url=user_config["instance"]["url"],
+    email=user_config["instance"]["email"],
+    token=user_config["instance"]["token"],
+    debug=_debug_output(),
+)
+
+if not feature_name_enabled(capabilities):
+    _error_json("Feature not available on this instance")
+    raise typer.Exit(1)
+```
+
+## Pro Feature Requirements
+
+When implementing Pro-only features, ensure:
+
+1. **API version check**: Minimum API v2.0 or v2.1 depending on feature
+2. **Commercial edition check**: Verify `features.commercial == true`
+3. **Feature flag check**: Verify specific feature flag exists and is true
+4. **Authentication**: Always require API token
+5. **Error messages**: Clear messages explaining Pro requirement
+
+Example error message:
+```python
+_error_json(
+    "The Feature API is not available on this instance. "
+    "This feature requires Password Pusher Pro with API version 2.1 or greater."
+)
+```
