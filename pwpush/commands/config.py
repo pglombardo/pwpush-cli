@@ -28,7 +28,7 @@ console = Console()
 @app.callback(invoke_without_command=True)
 def config_commands(
     ctx: typer.Context,
-    json: bool = typer.Option(
+    json_flag: bool = typer.Option(
         False,
         "--json",
         "-j",
@@ -60,8 +60,8 @@ def config_commands(
     """
     # Only update global CLI options if explicitly set via subcommand
     # This preserves global options set on the parent app (e.g., pwpush --json config)
-    if json:
-        cli_options["json"] = json
+    if json_flag:
+        cli_options["json"] = json_flag
     if verbose:
         cli_options["verbose"] = verbose
     if debug:
@@ -70,7 +70,7 @@ def config_commands(
         cli_options["pretty"] = pretty
 
     if ctx.invoked_subcommand is None:
-        _show_config(use_json=json or cli_options.get("json", False))
+        _show_config(use_json=json_flag or cli_options.get("json", False))
 
 
 @app.command()
