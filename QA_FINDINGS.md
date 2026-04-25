@@ -380,19 +380,44 @@ All test modules already have appropriate module-level docstrings:
 
 ---
 
-### L6: Large File Size
+### L6: Large File Size ✅ RESOLVED
 
 **File:** `pwpush/__main__.py` (~1177 lines)  
 **Severity:** Low  
-**Type:** Architecture
+**Type:** Architecture  
+**Status:** Fixed
 
-The main CLI file handles too many concerns:
-- Command definitions
-- API orchestration
-- Output formatting
-- Input validation
+**Issue:** The main CLI file handled too many concerns (command definitions, API orchestration, output formatting, input validation).
 
-**Recommendation:** Consider extracting command handlers into `pwpush/commands/push.py`, `pwpush/commands/auth.py`, etc.
+**Fix Applied:** Extracted command handlers into separate modules:
+
+1. **`pwpush/commands/auth.py`** - Authentication commands:
+   - `login_cmd()` - Login to Password Pusher instance
+   - `logout_cmd()` - Logout and clear credentials
+
+2. **`pwpush/commands/push.py`** - Push commands:
+   - `push_cmd()` - Push passwords/secrets with all options
+   - `push_file_cmd()` - Upload files with expiration
+
+3. **`pwpush/commands/manage.py`** - Push management commands:
+   - `expire_cmd()` - Expire existing pushes
+   - `audit_cmd()` - View audit logs
+   - `list_cmd()` - List active/expired pushes
+
+4. **`pwpush/utils.py`** - Shared utilities:
+   - Added `generate_passphrase()` (renamed from `genpass()`)
+   - Added `generate_secret()` for secure password generation
+
+5. **`pwpush/__main__.py`** - Slimmed down to:
+   - Main app setup and CLI callback
+   - Shared helper functions (`current_api_profile`, `require_api_token`, etc.)
+   - Command registration using thin wrappers that delegate to command modules
+
+**Benefits:**
+- Better separation of concerns
+- Easier to navigate and maintain
+- Command modules can be tested independently
+- Reduced complexity in main module
 
 ---
 

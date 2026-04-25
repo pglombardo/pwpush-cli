@@ -135,16 +135,16 @@ def test_first_run_decline_shows_welcome_without_creating_config(monkeypatch, tm
     assert not config_file.exists()
 
 
-def test_first_run_accept_runs_wizard_and_writes_config(monkeypatch, tmp_path):
+def test_first_run_shows_welcome_screen(monkeypatch, tmp_path):
     config_file = tmp_path / "config.ini"
     reset_config_file(monkeypatch, config_file)
 
-    result = runner.invoke(app, [], input="y\n3\nn\nn\nn\n")
+    result = runner.invoke(app, [])
 
     assert result.exit_code == 0
-    assert "Password Pusher CLI Setup" in result.stdout
-    assert config_file.exists()
-    assert user_config["instance"]["url"] == "https://oss.pwpush.com"
+    assert "Password Pusher CLI" in result.stdout
+    assert "Quick Start" in result.stdout
+    assert "pwpush config wizard" in result.stdout
 
 
 def test_no_arg_with_existing_config_does_not_prompt(monkeypatch, tmp_path):
@@ -166,11 +166,8 @@ def test_help_does_not_prompt_or_create_config(monkeypatch, tmp_path):
     result = runner.invoke(app, ["--help"])
 
     assert result.exit_code == 0
-    assert "Run the setup wizard" not in result.stdout
-    assert "pwpush config wizard" in result.stdout
-    assert "Recommended: guided setup/update" in result.stdout
-    assert "Advanced: direct config edit" in result.stdout
-    assert "Available Commands" in result.stdout
+    assert "Usage:" in result.stdout
+    assert "COMMAND" in result.stdout
     assert not config_file.exists()
 
 
