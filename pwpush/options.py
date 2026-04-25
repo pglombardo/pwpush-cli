@@ -12,7 +12,13 @@ user_config = configparser.ConfigParser()
 user_config_dir = Path(typer.get_app_dir("pwpush"))
 user_config_file = user_config_dir.joinpath("config.ini")
 
-cli_options = {"json": False, "verbose": False, "pretty": False, "debug": False}
+cli_options = {
+    "json": False,
+    "verbose": False,
+    "pretty": False,
+    "debug": False,
+    "insecure": False,
+}
 default_config: dict[str, dict[str, Any]] = {"instance": {}}
 default_config["instance"]["url"] = "https://eu.pwpush.com"
 default_config["instance"]["email"] = "Not Set"
