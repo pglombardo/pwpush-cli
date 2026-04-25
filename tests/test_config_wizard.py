@@ -1,3 +1,5 @@
+"""Tests for the configuration wizard."""
+
 import json
 
 from typer.testing import CliRunner

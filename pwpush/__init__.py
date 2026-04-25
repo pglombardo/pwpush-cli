@@ -33,7 +33,10 @@ def get_version() -> str:
 
                 with open(pyproject_path, "rb") as f:
                     pyproject_data = tomllib.load(f)
-                    return pyproject_data.get("project", {}).get("version", "unknown")
+                    version = pyproject_data.get("project", {}).get(
+                        "version", "unknown"
+                    )
+                    return str(version) if version is not None else "unknown"
         except Exception:
             pass
         return "unknown"

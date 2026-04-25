@@ -1,3 +1,5 @@
+"""Test suite for pwpush CLI."""
+
 from unittest.mock import patch
 
 import pytest

@@ -1,3 +1,5 @@
+"""Tests for login/logout functionality."""
+
 from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner

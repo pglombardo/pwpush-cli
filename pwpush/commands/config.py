@@ -82,7 +82,7 @@ def wizard() -> None:
     API token, and set default expiration/output preferences.
     """
     run_config_wizard()
-    raise typer.Exit(code=0)
+    raise typer.Exit()
 
 
 @app.command()
@@ -91,7 +91,7 @@ def init() -> None:
     Alias for `pwpush config wizard`.
     """
     run_config_wizard()
-    raise typer.Exit(code=0)
+    raise typer.Exit()
 
 
 @app.command()
@@ -242,7 +242,6 @@ def _show_config(use_json: bool = False) -> None:
         rprint()
         rprint("User config is saved in '%s/config.ini'" % typer.get_app_dir("pwpush"))
         rprint()
-    raise typer.Exit()
 
 
 @app.command()
@@ -297,11 +296,10 @@ def set(
     if not found:
         rprint("[red]That key was not found in the configuration.[/red]")
         rprint("See 'pwpush config show' for a list of valid keys.")
-        raise typer.Exit(code=1)
+        raise typer.Exit(1)
     else:
         save_config()
         rprint("Success")
-        raise typer.Exit(code=0)
 
 
 @app.command()
@@ -320,11 +318,10 @@ def unset(
     if not found:
         rprint("[red]That key was not found in the configuration.[/red]")
         rprint("See 'pwpush config show' for a list of valid keys.")
-        raise typer.Exit(code=1)
+        raise typer.Exit(1)
     else:
         save_config()
         rprint("Success")
-        raise typer.Exit(code=0)
 
 
 @app.command()
@@ -350,4 +347,3 @@ def delete() -> None:
     # Keep current process in a valid default state even after deletion.
     user_config.clear()
     user_config.read_dict(default_config)
-    raise typer.Exit(code=0)

@@ -1,3 +1,5 @@
+"""Tests for configuration management."""
+
 import json
 
 from typer.testing import CliRunner
