@@ -85,6 +85,10 @@ def adapt_text_payload_for_profile(
         push_payload["retrieval_step"] = source["retrieval_step"]
     if "passphrase" in source:
         push_payload["passphrase"] = source["passphrase"]
+    if "notify_emails_to" in source:
+        push_payload["notify_emails_to"] = source["notify_emails_to"]
+    if "notify_emails_to_locale" in source:
+        push_payload["notify_emails_to_locale"] = source["notify_emails_to_locale"]
 
     if "expire_after_days" in source:
         days = int(source["expire_after_days"])
@@ -117,6 +121,10 @@ def adapt_file_payload_for_profile(
         push_payload["deletable_by_viewer"] = source["deletable_by_viewer"]
     if "retrieval_step" in source:
         push_payload["retrieval_step"] = source["retrieval_step"]
+    if "notify_emails_to" in source:
+        push_payload["notify_emails_to"] = source["notify_emails_to"]
+    if "notify_emails_to_locale" in source:
+        push_payload["notify_emails_to_locale"] = source["notify_emails_to_locale"]
 
     if "expire_after_days" in source:
         days = int(source["expire_after_days"])

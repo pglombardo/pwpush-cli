@@ -154,6 +154,25 @@ def show(
         console.print(table)
 
         rprint()
+        rprint("[bold]=== Pro Settings:[/bold]")
+        rprint(
+            "Password Pusher Pro features. These require authentication and Pro instance support."
+        )
+        rprint()
+        table = Table("Key", "Value", "Description")
+        table.add_row(
+            "notify",
+            user_config["pro"]["notify"],
+            "Comma-separated emails to notify on push access (Pro feature, requires auth)",
+        )
+        table.add_row(
+            "notify_locale",
+            user_config["pro"]["notify_locale"],
+            "Locale for notification emails (e.g., en, es, fr)",
+        )
+        console.print(table)
+
+        rprint()
         rprint("[bold]=== CLI Settings:[/bold]")
         rprint("Behavior settings for this CLI.")
         rprint()

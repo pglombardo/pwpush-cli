@@ -16,7 +16,11 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from pwpush import version
-from pwpush.api.capabilities import detect_api_profile
+from pwpush.api.capabilities import (
+    detect_api_capabilities,
+    detect_api_profile,
+    email_notifications_enabled,
+)
 from pwpush.api.client import normalize_base_url, send_request
 from pwpush.api.endpoints import (
     adapt_file_payload_for_profile,
@@ -405,6 +409,8 @@ pwpush push --secret "https://..." --kind url    # Push as URL
 pwpush push --secret "QR data" --kind qr         # Push as QR code
 pwpush push --secret "data" --passphrase "pass"  # With passphrase
 pwpush push --secret "data" --prompt-passphrase  # Prompt for passphrase
+pwpush push --secret "data" --notify "admin@example.com"      # Notify on access (Pro)
+pwpush push --secret "data" --notify "a@b.com" --notify-locale "es"  # Spanish notifications
 [/code]"""
 
 
@@ -441,6 +447,16 @@ def push(
     kind: str = typer.Option(
         "text",
         help="The kind of push to create. Options: text, url, qr. Default: text",
+    ),
+    notify: str | None = typer.Option(
+        None,
+        "--notify",
+        help="Comma-separated email addresses to notify when this push is accessed. Requires authentication and a Pro instance with email notifications enabled.",
+    ),
+    notify_locale: str | None = typer.Option(
+        None,
+        "--notify-locale",
+        help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
     ),
 ) -> None:
     data: dict[str, dict[str, Any]] = {"password": {}}
@@ -570,6 +586,34 @@ def push(
     if passphrase is not None:
         data["password"]["passphrase"] = passphrase
 
+    # Email notification options require authentication
+    if notify or notify_locale:
+        token = user_config["instance"]["token"].strip()
+        if not token or token == "Not Set":
+            rprint(
+                "[red]Error: Email notifications require authentication. "
+                "Run 'pwpush login' or set a token with 'pwpush config set token <token>'.[/red]"
+            )
+            raise typer.Exit(1)
+
+        # Check if email notifications are supported on this instance
+        capabilities = detect_api_capabilities(
+            base_url=user_config["instance"]["url"],
+            email=user_config["instance"]["email"],
+            token=user_config["instance"]["token"],
+            debug=debug_output(),
+        )
+        if email_notifications_enabled(capabilities):
+            if notify:
+                data["password"]["notify_emails_to"] = notify
+            if notify_locale:
+                data["password"]["notify_emails_to_locale"] = notify_locale
+        else:
+            rprint(
+                "[yellow]Warning: Email notifications are not enabled on this instance. "
+                "Options ignored.[/yellow]"
+            )
+
     # Lets add a progressbar to notify the something is happing.
     with Progress(
         SpinnerColumn(),
@@ -616,6 +660,16 @@ def pushFile(
         None,
         help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..  Requires login.",
     ),
+    notify: str | None = typer.Option(
+        None,
+        "--notify",
+        help="Comma-separated email addresses to notify when this file is accessed. Requires authentication and a Pro instance with email notifications enabled.",
+    ),
+    notify_locale: str | None = typer.Option(
+        None,
+        "--notify-locale",
+        help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
+    ),
     payload: str = typer.Argument(
         "",
     ),
@@ -628,6 +682,7 @@ def pushFile(
         pwpush push-file data.txt --deletable           # Allow deletion by viewer
         pwpush push-file config.json --retrieval-step   # Require click-through
         pwpush push-file backup.zip --days 7 --views 5  # Custom expiration
+        pwpush push-file doc.pdf --notify "admin@example.com"      # Notify on access (Pro)
     """
     require_api_token("push-file")
     api_profile = current_api_profile()
@@ -667,6 +722,34 @@ def pushFile(
 
     if note:
         data["file_push"]["note"] = note
+
+    # Email notification options require authentication
+    if notify or notify_locale:
+        token = user_config["instance"]["token"].strip()
+        if not token or token == "Not Set":
+            rprint(
+                "[red]Error: Email notifications require authentication. "
+                "Run 'pwpush login' or set a token with 'pwpush config set token <token>'.[/red]"
+            )
+            raise typer.Exit(1)
+
+        # Check if email notifications are supported on this instance
+        capabilities = detect_api_capabilities(
+            base_url=user_config["instance"]["url"],
+            email=user_config["instance"]["email"],
+            token=user_config["instance"]["token"],
+            debug=debug_output(),
+        )
+        if email_notifications_enabled(capabilities):
+            if notify:
+                data["file_push"]["notify_emails_to"] = notify
+            if notify_locale:
+                data["file_push"]["notify_emails_to_locale"] = notify_locale
+        else:
+            rprint(
+                "[yellow]Warning: Email notifications are not enabled on this instance. "
+                "Options ignored.[/yellow]"
+            )
 
     try:
         with open(payload, "rb") as fd:

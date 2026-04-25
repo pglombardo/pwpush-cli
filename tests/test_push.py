@@ -266,3 +266,170 @@ def test_push_with_piped_input_explicit_secret(mock_make_request):
     post_call = _get_post_call(mock_make_request)
     assert post_call is not None
     assert post_call[1]["post_data"]["password"]["payload"] == "explicit-secret"
+
+
+def test_push_with_notify_unauthenticated(monkeypatch):
+    """Test that --notify requires authentication - error when no API token."""
+    from pwpush.commands.config import user_config
+
+    # Ensure no token is set
+    monkeypatch.setitem(user_config["instance"], "token", "Not Set")
+
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="legacy"),
+        patch("pwpush.__main__.make_request") as mock,
+    ):
+        mock.return_value.status_code = 201
+        mock.return_value.json.return_value = {
+            "url_token": "super-token",
+            "url": "https://pwpush.test/en/p/text-password-url",
+        }
+        result = runner.invoke(
+            app, ["push", "--secret", "test", "--notify", "admin@example.com"]
+        )
+    assert result.exit_code == 1
+    assert "Email notifications require authentication" in result.output
+
+
+def test_push_with_notify_locale_unauthenticated(monkeypatch):
+    """Test that --notify-locale requires authentication - error when no API token."""
+    from pwpush.commands.config import user_config
+
+    # Ensure no token is set
+    monkeypatch.setitem(user_config["instance"], "token", "Not Set")
+
+    with (
+        patch("pwpush.__main__.current_api_profile", return_value="legacy"),
+        patch("pwpush.__main__.make_request") as mock,
+    ):
+        mock.return_value.status_code = 201
+        mock.return_value.json.return_value = {
+            "url_token": "super-token",
+            "url": "https://pwpush.test/en/p/text-password-url",
+        }
+        result = runner.invoke(
+            app, ["push", "--secret", "test", "--notify-locale", "en"]
+        )
+    assert result.exit_code == 1
+    assert "Email notifications require authentication" in result.output
+
+
+def test_push_with_notify_when_enabled(mock_make_request, monkeypatch):
+    """Test push with notification when feature is enabled."""
+    # Mock capabilities with feature enabled
+    mock_capabilities = {
+        "api_version": "2.1.0",
+        "features": {"email_auto_dispatch": True},
+    }
+    monkeypatch.setattr(
+        "pwpush.__main__.detect_api_capabilities",
+        lambda **kwargs: mock_capabilities,
+    )
+
+    # Set up auth token
+    from pwpush.commands.config import user_config
+
+    monkeypatch.setitem(user_config["instance"], "token", "valid-token")
+
+    result = runner.invoke(
+        app, ["push", "--secret", "test", "--notify", "admin@example.com"]
+    )
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    assert (
+        post_call[1]["post_data"]["password"]["notify_emails_to"] == "admin@example.com"
+    )
+
+
+def test_push_with_notify_when_disabled(mock_make_request, monkeypatch):
+    """Test push with notification shows warning when feature is disabled."""
+    # Mock capabilities with feature disabled
+    mock_capabilities = {
+        "api_version": "2.1.0",
+        "features": {"email_auto_dispatch": False},
+    }
+    monkeypatch.setattr(
+        "pwpush.__main__.detect_api_capabilities",
+        lambda **kwargs: mock_capabilities,
+    )
+
+    # Set up auth token
+    from pwpush.commands.config import user_config
+
+    monkeypatch.setitem(user_config["instance"], "token", "valid-token")
+
+    result = runner.invoke(
+        app, ["push", "--secret", "test", "--notify", "admin@example.com"]
+    )
+    assert result.exit_code == 0
+    assert "Email notifications are not enabled" in result.output
+    # Verify notify field is NOT in the payload
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    assert "notify_emails_to" not in post_call[1]["post_data"]["password"]
+
+
+def test_push_with_notify_locale(mock_make_request, monkeypatch):
+    """Test push with notification locale."""
+    mock_capabilities = {
+        "api_version": "2.1.0",
+        "features": {"email_auto_dispatch": True},
+    }
+    monkeypatch.setattr(
+        "pwpush.__main__.detect_api_capabilities",
+        lambda **kwargs: mock_capabilities,
+    )
+
+    from pwpush.commands.config import user_config
+
+    monkeypatch.setitem(user_config["instance"], "token", "valid-token")
+
+    result = runner.invoke(
+        app,
+        [
+            "push",
+            "--secret",
+            "test",
+            "--notify",
+            "admin@example.com",
+            "--notify-locale",
+            "es",
+        ],
+    )
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    assert (
+        post_call[1]["post_data"]["password"]["notify_emails_to"] == "admin@example.com"
+    )
+    assert post_call[1]["post_data"]["password"]["notify_emails_to_locale"] == "es"
+
+
+def test_email_notifications_enabled_helper():
+    """Test the email_notifications_enabled helper function."""
+    from pwpush.api.capabilities import email_notifications_enabled
+
+    # Enabled
+    assert email_notifications_enabled(
+        {"api_version": "2.1.0", "features": {"email_auto_dispatch": True}}
+    )
+
+    # Disabled - feature flag false
+    assert not email_notifications_enabled(
+        {"api_version": "2.1.0", "features": {"email_auto_dispatch": False}}
+    )
+
+    # Disabled - missing feature flag
+    assert not email_notifications_enabled({"api_version": "2.1.0", "features": {}})
+
+    # Disabled - old API version
+    assert not email_notifications_enabled(
+        {"api_version": "2.0.0", "features": {"email_auto_dispatch": True}}
+    )
+
+    # Disabled - None
+    assert not email_notifications_enabled(None)
+
+    # Disabled - empty dict
+    assert not email_notifications_enabled({})
