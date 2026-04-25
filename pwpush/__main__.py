@@ -302,6 +302,13 @@ def load_cli_options(
         "-h",
         help="Show this message and exit.",
     ),
+    version: bool = typer.Option(
+        False,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
+        help="Show the version and exit.",
+    ),
 ) -> None:
     # CLI Args override configuration
     cli_options["json"] = parse_boolean(json)
