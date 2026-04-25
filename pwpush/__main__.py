@@ -349,13 +349,24 @@ def make_request(
     request_timeout = (
         timeout if timeout is not None else (5 if method == "DELETE" else 30)
     )
+    # Add account_id to POST data if configured and present
+    resolved_post_data = post_data
+    account_id = user_config["instance"].get("account_id", "Not Set")
+    if (
+        method == "POST"
+        and post_data is not None
+        and account_id
+        and account_id != "Not Set"
+    ):
+        resolved_post_data = {**post_data, "account_id": account_id}
+
     return send_request(
         method,
         base_url=base_url or user_config["instance"]["url"],
         path=path,
         email=email or user_config["instance"]["email"],
         token=token or user_config["instance"]["token"],
-        post_data=post_data,
+        post_data=resolved_post_data,
         upload_files=upload_files,
         timeout=request_timeout,
         debug=debug_output(),
