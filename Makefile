@@ -114,15 +114,5 @@ release:
 	git tag -a "v$$NEW_VERSION" -m "Version $$NEW_VERSION"; \
 	git push oss HEAD; \
 	git push oss "v$$NEW_VERSION"; \
-	echo "Waiting for release-drafter to create draft release..."; \
-	for i in 1 2 3 4 5; do \
-		sleep 3; \
-		if gh release view "v$$NEW_VERSION" >/dev/null 2>&1; then \
-			echo "Publishing GitHub release..."; \
-			gh release edit "v$$NEW_VERSION" --draft=false; \
-			break; \
-		fi; \
-		echo "Waiting... ($$i/5)"; \
-	done
 	poetry publish --build
 	@echo "Release complete!"
