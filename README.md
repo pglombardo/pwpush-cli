@@ -4,57 +4,32 @@
 
 [![Build status](https://github.com/pglombardo/pwpush-cli/workflows/build/badge.svg?branch=master&event=push)](https://github.com/pglombardo/pwpush-cli/actions?query=workflow%3Abuild)
 [![Python Version](https://img.shields.io/pypi/pyversions/pwpush.svg)](https://pypi.org/project/pwpush/)
-[![Dependencies Status](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)](https://github.com/pglombardo/pwpush-cli/pulls?utf8=%E2%9C%93&q=is%3Apr%20author%3Aapp%2Fdependabot)
-
+[![PyPI](https://img.shields.io/pypi/v/pwpush)](https://pypi.org/project/pwpush/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Security: bandit](https://img.shields.io/badge/security-bandit-green.svg)](https://github.com/PyCQA/bandit)
-[![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pglombardo/pwpush-cli/blob/master/.pre-commit-config.yaml)
-[![Semantic Versions](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--versions-e10079.svg)](https://github.com/pglombardo/pwpush-cli/releases)
 [![License](https://img.shields.io/github/license/pglombardo/pwpush-cli)](https://github.com/pglombardo/pwpush/blob/master/LICENSE)
 
-**Command Line Interface for Password Pusher**
+**The elegant way to share secrets from the command line.**
 <br>
-Secure information distribution with automatic expiration controls.
+Self-destructing links for passwords, files, and sensitive data.
+
+[Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [Documentation](https://docs.pwpush.com)
 
 </div>
 
-## Overview
+---
 
-The `pwpush` CLI is a powerful command-line tool that interfaces with [Password Pusher](https://pwpush.com) instances for secure information distribution. It supports both the hosted services (eu.pwpush.com, us.pwpush.com) and self-hosted instances.
+## What is pwpush?
 
-### API Compatibility (Auto-Negotiation)
+`pwpush` is a beautiful, intuitive CLI for [Password Pusher](https://pwpush.com) — the secure way to share passwords, secrets, and files. Instead of sending sensitive data over email or Slack, create self-destructing links that automatically expire after a set number of views or days.
 
-`pwpush` prefers API v2 automatically.
+```bash
+# Share a password securely
+$ pwpush push --secret "my-password"
+The secret has been pushed to:
+https://pwpush.com/p/abc123xyz
+```
 
-- On command execution, the CLI probes `GET /api/v2/version`.
-- If available (`200`), the CLI uses API v2 endpoints.
-- If unavailable, the CLI falls back to legacy endpoints used by older instances.
-- The detected profile is cached in config with a TTL (`api_profile_ttl_seconds`, default 3600 seconds) to reduce repeated probes across CLI runs.
-
-This supports:
-
-- Password Pusher Pro/self-hosted Pro instances with API v2
-- Open source Password Pusher instances with API v2 support (v2.4.2+)
-- Older open source/self-hosted instances via legacy endpoint fallback
-
-### Why Secure Information Distribution?
-
-Traditional communication tools create permanent digital footprints that can be exploited years later. Password Pusher sidesteps this by creating:
-
-- **Self-destructing shareable links** that auto-expire after a preset number of views
-- **Time-based expiration** that automatically deletes content after a set duration
-- **Zero permanent storage** - once expired, the information is completely removed
-- **Full audit trails** so you know exactly who accessed what and when
-
-### Key Features
-
-- 🔐 **Secure Information Distribution**: Self-destructing links for passwords, secrets, and files with automatic expiration and complete audit trails.
-- 🌐 **Multi-Instance Support**: Works with eu.pwpush.com, us.pwpush.com, or your own instance
-- 🔑 **Authentication**: Full API integration with user accounts
-- 📊 **Audit Logs**: Track access and usage of distributed content
-- 🎯 **Flexible Expiration**: Set expiration by views, days, or both
-- 📁 **File Support**: Distribute files securely with the same expiration controls and audit logs
-- 🎨 **Rich Output**: Beautiful terminal output with tables and formatting
+---
 
 ## Installation
 
@@ -62,335 +37,214 @@ Traditional communication tools create permanent digital footprints that can be 
 pip install pwpush
 ```
 
-**Requirements**: Python 3.10 or higher
+Requires Python 3.10 or higher.
+
+---
 
 ## Quick Start
 
-### 1. Guided Setup
+### 1. Run the Config Wizard 🧙
 
-Run the setup wizard to choose your Password Pusher instance, optionally add an
-API token, and set default expiration/output preferences:
+The easiest way to get started. The wizard guides you through selecting your instance, setting up authentication, and configuring defaults:
 
 ```bash
-pwpush config wizard
+$ pwpush config wizard
+
+Password Pusher CLI Setup
+This wizard will create your local pwpush configuration.
+
+┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Option ┃ Instance            ┃ Description             ┃
+┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 1      │ https://eu.pwpush.com │ EU hosted: Pro features │
+│ 2      │ https://us.pwpush.com │ US hosted: Pro features │
+│ 3      │ https://oss.pwpush.com│ OSS: EU Data Residency  │
+│ 4      │ Custom              │ Self-hosted instance    │
+└────────┴─────────────────────┴─────────────────────────┘
 ```
 
-On first run, `pwpush` will also offer to launch this wizard automatically if no
-local configuration file exists.
-
-### 2. Basic Usage
+### 2. Push Your First Secret
 
 ```bash
-# Push a password (interactive mode)
-pwpush push
+# Interactive mode — just type and go
+$ pwpush push
+Enter secret: ********
+The secret has been pushed to:
+https://pwpush.com/p/xyz789abc
 
-# Push a password directly
-pwpush push --secret "mypassword123"
+# Or pass it directly
+$ pwpush push --secret "my-password" --days 3 --views 5
 
 # Auto-generate a secure password
-pwpush push --auto
-
-# Push with custom expiration (7 days, 5 views)
-pwpush push --secret "mypassword" --days 7 --views 5
+$ pwpush push --auto
+Passphrase is: battery horse staple correct
+https://pwpush.com/p/auto123gen
 ```
 
-### 3. Configure Your Instance
-
-The CLI works with multiple Password Pusher instances:
+### 3. Share Files
 
 ```bash
-# Recommended: guided setup/update
-pwpush config wizard
-
-# Advanced: direct configuration edits
-pwpush config set url https://eu.pwpush.com
-pwpush config set url https://us.pwpush.com
-pwpush config set url https://pwpush.yourdomain.com
+$ pwpush push-file secret-document.pdf --days 7
+https://pwpush.com/f/file456token
 ```
 
-### 4. Authentication (Optional)
+---
 
-For advanced features like listing pushes and audit logs, authenticate with your account:
+## Why pwpush?
 
-```bash
-# Login with your credentials
-pwpush login
+### 🔐 Security First
+- Zero permanent storage — data is encrypted and auto-deleted
+- Full audit trails — see exactly who accessed what and when
+- Prevent URL scanners with `--retrieval-step`
 
-# Or set credentials manually
-pwpush config set email your@email.com
-pwpush config set token your_api_token
-```
+### ✨ Developer Experience
+- **Auto-negotiating API** — seamlessly works with v2 and legacy instances
+- **Beautiful output** — rich tables, colors, and formatting
+- **JSON mode** — perfect for scripts and CI/CD pipelines
 
-Get your API token from: https://pwpush.com/en/users/token
+### 🌍 Multi-Instance Support
+Works with hosted services or your own instance:
+- `eu.pwpush.com` — EU-hosted Pro
+- `us.pwpush.com` — US-hosted Pro  
+- `oss.pwpush.com` — Free OSS tier
+- Self-hosted — Your own domain
 
-## Common Commands
+---
 
-### Pushing Content
-
-```bash
-# Push a password with custom settings
-pwpush push --secret "password123" --days 3 --views 10 --deletable
-
-# Push as URL (for sharing links)
-pwpush push --secret "https://example.com" --kind url
-
-# Push as QR code
-pwpush push --secret "QR data content" --kind qr
-
-# Push a file
-pwpush push-file document.pdf --days 7 --views 5
-
-# Push with a reference note (requires authentication)
-pwpush push --secret "password" --note "Employee onboarding - John Doe"
-
-# Require click-through for retrieval (prevents URL scanners)
-pwpush push --secret "password" --retrieval-step
-```
-
-### Managing Pushes
+## Everyday Commands
 
 ```bash
-# List your active pushes (requires authentication)
+# Quick password share
+pwpush push --secret "db-password" --days 1 --views 3
+
+# Share a link as a clickable URL
+pwpush push --secret "https://staging.example.com" --kind url
+
+# Push with a reference note (for your records)
+pwpush push --secret "password" --note "AWS Root - Production"
+
+# List your active pushes
 pwpush list
 
-# List expired pushes
-pwpush list --expired
-
-# View audit log for a specific push
+# View audit trail
 pwpush audit <url_token>
 
 # Expire a push immediately
 pwpush expire <url_token>
 ```
 
-### Configuration
+---
+
+## Pro Features
+
+For [Password Pusher Pro](https://pwpush.com) users with authenticated access:
 
 ```bash
-# Guided setup/update (recommended)
+# Email notifications when push is accessed
+pwpush push --secret "password" --notify "admin@company.com"
+
+# Multi-language notifications
+pwpush push --secret "password" --notify "admin@company.com" --notify-locale "es"
+
+# Multiple accounts per API token (automatically detected)
+```
+
+---
+
+## Configuration
+
+The CLI stores settings in `~/.config/pwpush/config.ini` with restricted permissions (0o600):
+
+```bash
+# Guided setup (recommended)
 pwpush config wizard
 
-# View current configuration
+# View current settings
 pwpush config
 
-# Advanced: set default expiration settings directly
+# Quick updates
 pwpush config set expire_after_days 7
 pwpush config set expire_after_views 10
 
-# Enable JSON output by default
-pwpush config set json true
-
-# Delete local configuration file (asks for confirmation)
+# Reset everything
 pwpush config delete
-
-# Logout and clear credentials
-pwpush logout
 ```
+
+---
 
 ## Advanced Usage
 
-### Pro Features (pwpush.com)
-
-Password Pusher Pro supports email notifications when pushes are accessed. This feature requires authentication and is automatically detected from your instance's capabilities.
+### JSON Output for Scripting
 
 ```bash
-# Notify specific emails when the push is accessed (requires login)
-pwpush push --secret "password123" --notify "admin@company.com,security@company.com"
+# Perfect for automation
+$ pwpush --json push --secret "password"
+{"url":"https://pwpush.com/p/abc123","url_token":"abc123","expire_after_days":7}
 
-# Set locale for notification emails
-pwpush push --secret "password123" --notify "admin@company.com" --notify-locale "en"
-
-# File push with notifications
-pwpush push-file document.pdf --notify "admin@company.com"
+# Chain with other tools
+$ pwpush --json push --auto | jq -r '.url' | pbcopy
 ```
 
-**Requirements:**
-- Authentication required (API token must be set via `pwpush login`)
-- API version 2.1 or higher
-- The `email_auto_dispatch` feature enabled on your instance
-
-### Push Types
-
-The `--kind` parameter allows you to specify the type of content being pushed:
+### Pipe Input
 
 ```bash
-# Text/Password (default)
-pwpush push --secret "mypassword" --kind text
+# Pipe passwords directly
+cat secret.txt | pwpush push
 
-# URL - for sharing links that will be displayed as clickable URLs
-pwpush push --secret "https://example.com" --kind url
-
-# QR Code - for content that will be displayed as a QR code
-pwpush push --secret "QR data content" --kind qr
-
-# File - automatically set when using push-file command
-pwpush push-file document.pdf  # kind is automatically set to "file"
+# From environment variables
+pwpush push --secret "$DATABASE_PASSWORD"
 ```
 
-### JSON Output
+### Debug Mode
 
 ```bash
-# Get JSON output for scripting
-pwpush --json push --secret "password"
-pwpush --json list
-```
-
-### Verbose and Debug Modes
-
-```bash
-# Enable verbose output
-pwpush --verbose push --secret "password"
-
-# Enable debug mode for troubleshooting
-pwpush --debug push --secret "password"
-```
-
-### Batch Operations
-
-```bash
-# Generate and distribute multiple passwords
-for i in {1..5}; do
-  pwpush --json push --auto --note "Batch password $i"
-done
-```
-
-## Configuration Reference
-
-### Instance Settings
-
-| Key | Description | Example |
-|-----|-------------|---------|
-| `url` | Password Pusher instance URL | `https://eu.pwpush.com` |
-| `email` | Your account email | `user@example.com` |
-| `token` | Your API token | `abc123...` |
-
-### Expiration Settings
-
-| Key | Description | Valid Values |
-|-----|-------------|--------------|
-| `expire_after_days` | Default days until expiration | 1-90 |
-| `expire_after_views` | Default views until expiration | 1-100 |
-| `retrieval_step` | Require click-through for retrieval | true/false |
-| `deletable_by_viewer` | Allow viewers to delete content | true/false |
-
-### CLI Settings
-
-| Key | Description | Valid Values |
-|-----|-------------|--------------|
-| `json` | Output in JSON format | true/false |
-| `verbose` | Enable verbose output | true/false |
-
-### Pro Settings
-
-| Key | Description | Valid Values |
-|-----|-------------|--------------|
-| `notify` | Notification email addresses stored in configuration | Comma-separated emails |
-| `notify_locale` | Notification email locale stored in configuration | `en`, `es`, `fr`, `de`, etc. |
-
-**Note:** These settings require a Password Pusher Pro instance with email notifications enabled. They are stored in your config file but are not currently applied automatically as defaults by the `push` or `push-file` commands.
-
-## Examples
-
-### Developer Workflow
-
-```bash
-# Push database credentials with team
-pwpush push --secret "db_password_123" --days 1 --views 3 --note "Staging DB - expires in 24h"
-
-# Push API keys securely
-pwpush push --secret "sk_live_..." --days 7 --views 1 --note "Production API Key"
-
-# Share deployment URLs as clickable links
-pwpush push --secret "https://staging.example.com/deploy" --kind url --days 1 --views 5
-```
-
-### System Administration
-
-```bash
-# Push temporary access credentials
-pwpush push --auto --days 1 --views 1 --note "Emergency access - $(date)"
-
-# Push configuration files
-pwpush push-file /etc/nginx/nginx.conf --days 3 --views 5
-```
-
-### Team Collaboration
-
-```bash
-# Push deployment secrets
-pwpush push --secret "deploy_token" --days 1 --views 10 --note "Release v2.1.0"
-
-# Push sensitive documents
-pwpush push-file sensitive_document.pdf --days 7 --views 3 --retrieval-step
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Connection Errors**
-```bash
-# Check your instance URL
-pwpush config
-
-# Test connectivity
+# Troubleshoot connectivity
 pwpush --debug push --secret "test"
 ```
 
-**Authentication Issues**
-```bash
-# Verify your credentials
-pwpush config
+---
 
-# Re-login
-pwpush logout
-pwpush login
-```
+## API Compatibility
 
-**Permission Errors**
-```bash
-# Check file permissions when uploading files
-ls -la your_file.txt
-pwpush push-file your_file.txt
-```
+The CLI automatically detects your instance's API version:
 
-### Getting Help
+1. Probes `GET /api/v2/version` on first run
+2. Uses **API v2** if available (modern, feature-rich)
+3. Falls back to **legacy** endpoints for older instances
+4. Caches the result for 1 hour to avoid repeated probes
 
-```bash
-# View all available commands
-pwpush --help
+Works with:
+- ✅ Password Pusher Pro (any version)
+- ✅ Open Source v2.4.2+ with API v2
+- ✅ Older instances via legacy fallback
 
-# Get help for specific commands
-pwpush push --help
-pwpush config --help
-pwpush config delete --help
-```
+---
 
 ## Security Notes
 
-- Passwords and secrets are encrypted before transmission
-- All communication uses HTTPS
-- Content is automatically deleted after expiration
-- API tokens should be kept secure and not shared
-- Use `--retrieval-step` to prevent URL scanners from consuming views
+- All data is encrypted in transit (HTTPS) and at rest
+- Content is permanently deleted after expiration
+- API tokens are stored with 0o600 permissions
+- Use `--retrieval-step` to prevent bot consumption
+- Passphrase protection available with `--passphrase`
 
-## Contributing
+---
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+## Links & Resources
 
-## License
+| Resource | Link |
+|----------|------|
+| 📖 Full Documentation | [docs.pwpush.com](https://docs.pwpush.com) |
+| 🌐 Password Pusher | [pwpush.com](https://pwpush.com) |
+| 💻 Open Source Project | [github.com/pglombardo/PasswordPusher](https://github.com/pglombardo/PasswordPusher) |
+| 🐛 Issue Tracker | [github.com/pglombardo/pwpush-cli/issues](https://github.com/pglombardo/pwpush-cli/issues) |
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+---
 
-## Links
+## About
 
-- **Password Pusher**: https://pwpush.com
-- **Documentation**: https://docs.pwpush.com
-- **GitHub Repository**: https://github.com/pglombardo/pwpush-cli
-- **Open Source Project**: https://github.com/pglombardo/PasswordPusher
+Built by [Apnotic](https://apnotic.com) — empowering secure information distribution.
 
-## About Apnotic
-
-This CLI tool is built by **Apnotic**.
-
-- **Company Homepage**: https://apnotic.com
-- **Password Pusher Pro**: https://pwpush.com
+- Homepage: [apnotic.com](https://apnotic.com)
+- SaaS: [pwpush.com](https://pwpush.com)
+- License: MIT
