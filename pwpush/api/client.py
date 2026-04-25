@@ -57,6 +57,7 @@ def send_request(
     upload_files: dict[str, Any] | None = None,
     timeout: int = 30,
     debug: bool = False,
+    verify: bool = True,
 ) -> requests.Response:
     """Send one HTTP request to the configured instance."""
     auth_headers = build_auth_headers(email, token)
@@ -67,6 +68,10 @@ def send_request(
         safe_headers = _sanitize_headers(headers)
         rprint(f"Communicating with {normalize_base_url(base_url)} as user {email}")
         rprint(f"Making {method} request to {url} with headers {safe_headers}")
+        if not verify:
+            rprint(
+                "[yellow]Warning: SSL certificate verification is disabled.[/yellow]"
+            )
         if method == "POST":
             rprint(f"Request body: {post_data}")
             if upload_files is not None:
@@ -74,7 +79,7 @@ def send_request(
 
     try:
         if method == "GET":
-            return requests.get(url, headers=headers, timeout=timeout)
+            return requests.get(url, headers=headers, timeout=timeout, verify=verify)
         if method == "POST":
             return requests.post(
                 url,
@@ -82,9 +87,10 @@ def send_request(
                 json=post_data,
                 timeout=timeout,
                 files=upload_files,
+                verify=verify,
             )
         if method == "DELETE":
-            return requests.delete(url, headers=headers, timeout=timeout)
+            return requests.delete(url, headers=headers, timeout=timeout, verify=verify)
     except requests.exceptions.Timeout:
         rprint(
             "[red]Error: Request timed out. Please check your connection and try again.[/red]"
