@@ -9,6 +9,7 @@ from pwpush.api.capabilities import detect_api_profile
 from pwpush.api.client import normalize_base_url
 from pwpush.api.endpoints import validation_paths
 from pwpush.commands.config import save_config, user_config
+from pwpush.config_wizard import collect_account_selection
 
 
 def _current_api_profile(
@@ -94,6 +95,12 @@ def login_cmd(
         user_config["instance"]["token"] = token
         user_config["instance"]["api_profile"] = api_profile
         user_config["instance"]["api_profile_checked_at"] = str(int(time.time()))
+
+        # Check for multi-account support and select account if needed
+        account_id = collect_account_selection(normalized_url, token)
+        if account_id != "Not Set":
+            user_config["instance"]["account_id"] = account_id
+
         save_config()
         rprint()
         rprint("Login successful.  Credentials saved.")
@@ -112,5 +119,6 @@ def logout_cmd() -> None:
     if confirmation := typer.prompt("Are you sure? [y/n]"):
         user_config["instance"]["email"] = "Not Set"
         user_config["instance"]["token"] = "Not Set"
+        user_config["instance"]["account_id"] = "Not Set"
         save_config()
         rprint("Log out successful.")

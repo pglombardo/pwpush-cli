@@ -149,6 +149,11 @@ def _show_config(use_json: bool = False) -> None:
             "API token from your account.  e.g. 'https://pwpush.com/en/users/token'",
         )
         table.add_row(
+            "account_id",
+            user_config["instance"].get("account_id", "Not Set"),
+            "Selected account ID for multi-account instances.",
+        )
+        table.add_row(
             "api_profile",
             user_config["instance"]["api_profile"],
             "Cached API profile detected for this instance (v2/legacy).",

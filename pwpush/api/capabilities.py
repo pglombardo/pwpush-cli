@@ -82,7 +82,7 @@ def detect_api_capabilities(
         response = requests.get(probe_url, headers=headers, timeout=5)
         if response.status_code == 200:
             data = response.json()
-            result["api_version"] = data.get("version")
+            result["api_version"] = data.get("api_version")
             result["features"] = data.get("features", {})
             if debug:
                 rprint(f"[dim][debug] API capabilities detected: {result}[/dim]")
@@ -131,3 +131,39 @@ def email_notifications_enabled(capabilities: dict[str, Any] | None = None) -> b
 
     features = capabilities.get("features", {})
     return bool(features.get("email_auto_dispatch", False))
+
+
+def accounts_enabled(capabilities: dict[str, Any] | None = None) -> bool:
+    """Check if multiple accounts per API token are supported.
+
+    Returns True only when:
+    - API version >= 2.1
+    - features.accounts.enabled == true
+
+    Args:
+        capabilities: Dict returned by detect_api_capabilities()
+
+    Returns:
+        bool: True if accounts are enabled on this instance
+    """
+    if not capabilities:
+        return False
+
+    version = capabilities.get("api_version")
+    if not version:
+        return False
+
+    # Parse version string - handle cases like "2.1.0" or "2.1"
+    try:
+        version_parts = version.split(".")
+        major = int(version_parts[0]) if len(version_parts) > 0 else 0
+        minor = int(version_parts[1]) if len(version_parts) > 1 else 0
+
+        if major < 2 or (major == 2 and minor < 1):
+            return False
+    except (ValueError, IndexError):
+        return False
+
+    features = capabilities.get("features", {})
+    accounts = features.get("accounts", {})
+    return bool(accounts.get("enabled", False))

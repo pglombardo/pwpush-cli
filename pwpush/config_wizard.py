@@ -1,15 +1,132 @@
+from typing import Any
+
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
+import requests
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from pwpush.api.client import normalize_base_url
+from pwpush.api.capabilities import accounts_enabled, detect_api_capabilities
+from pwpush.api.client import absolute_url, normalize_base_url
 from pwpush.options import save_config, user_config, user_config_file
 from pwpush.utils import mask_sensitive_value, parse_boolean
 
 NOT_SET = "Not Set"
+
+
+def fetch_accounts(base_url: str, token: str) -> list[dict[str, Any]]:
+    """Fetch available accounts from the API.
+
+    Args:
+        base_url: The Password Pusher instance URL
+        token: The API token for authentication
+
+    Returns:
+        List of account dictionaries with id, name, and role fields
+    """
+    accounts_url = absolute_url(base_url, "/api/v2/accounts")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    try:
+        response = requests.get(accounts_url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            if isinstance(data, list):
+                return data
+            # Handle case where response is wrapped in an object
+            return data.get("accounts", []) if isinstance(data, dict) else []
+        return []
+    except requests.exceptions.RequestException:
+        return []
+
+
+def select_account(accounts: list[dict[str, Any]]) -> str:
+    """Prompt user to select an account from the list.
+
+    Args:
+        accounts: List of account dictionaries with id, name, and role fields
+
+    Returns:
+        The selected account ID as a string, or NOT_SET if selection fails
+    """
+    if not accounts:
+        console.print("[yellow]Warning: No accounts found for this API token.[/yellow]")
+        return NOT_SET
+
+    if len(accounts) == 1:
+        account = accounts[0]
+        account_id = str(account.get("id", ""))
+        account_name = account.get("name", "Unnamed Account")
+        console.print(
+            f"[green]Using account: {account_name} (ID: {account_id})[/green]"
+        )
+        return account_id
+
+    # Multiple accounts - show selection table
+    table = Table("Option", "Account Name", "Role")
+    for index, account in enumerate(accounts, start=1):
+        name = account.get("name", "Unnamed Account")
+        role = account.get("role", "unknown")
+        table.add_row(str(index), name, role)
+    console.print(table)
+
+    while True:
+        selection = typer.prompt(
+            f"Choose an account (1-{len(accounts)})", default="1"
+        ).strip()
+        try:
+            index = int(selection)
+            if 1 <= index <= len(accounts):
+                selected_account = accounts[index - 1]
+                account_id = str(selected_account.get("id", ""))
+                account_name = selected_account.get("name", "Unnamed Account")
+                console.print(f"[green]Selected account: {account_name}[/green]")
+                return account_id
+            console.print(
+                f"[red]Please enter a number between 1 and {len(accounts)}.[/red]"
+            )
+        except ValueError:
+            console.print("[red]Please enter a valid number.[/red]")
+
+
+def collect_account_selection(base_url: str, token: str) -> str:
+    """Check if accounts are enabled and collect account selection.
+
+    This function checks the API version/capabilities to determine if
+    the instance supports multiple accounts per API token. If enabled,
+    it fetches the available accounts and prompts the user to select
+    one if multiple accounts are available.
+
+    Args:
+        base_url: The Password Pusher instance URL
+        token: The API token for authentication
+
+    Returns:
+        The selected account ID, or NOT_SET if not applicable
+    """
+    # Skip if no token provided
+    if not token or token == NOT_SET:
+        return NOT_SET
+
+    # Check API capabilities
+    capabilities = detect_api_capabilities(
+        base_url=base_url,
+        email=NOT_SET,
+        token=token,
+        debug=False,
+    )
+
+    if not accounts_enabled(capabilities):
+        return NOT_SET
+
+    # Accounts are enabled - fetch and select
+    console.print(
+        "[dim]Multiple accounts detected - fetching available accounts...[/dim]"
+    )
+    accounts = fetch_accounts(base_url, token)
+    return select_account(accounts)
 
 
 @dataclass(frozen=True)
@@ -28,6 +145,7 @@ class WizardSettings:
     url: str
     email: str
     token: str
+    account_id: str
     expire_after_days: str
     expire_after_views: str
     retrieval_step: str
@@ -196,6 +314,11 @@ def collect_wizard_settings() -> WizardSettings:
         else:
             token = existing_token if has_existing_token else NOT_SET
 
+    # Collect account selection if accounts are enabled
+    account_id = NOT_SET
+    if token != NOT_SET:
+        account_id = collect_account_selection(url, token)
+
     # Get existing expiration values
     existing_expire_days = user_config["expiration"]["expire_after_days"]
     existing_expire_views = user_config["expiration"]["expire_after_views"]
@@ -308,6 +431,7 @@ def collect_wizard_settings() -> WizardSettings:
         url=url,
         email=email,
         token=token,
+        account_id=account_id,
         expire_after_days=expire_after_days,
         expire_after_views=expire_after_views,
         retrieval_step=retrieval_step,
@@ -326,6 +450,7 @@ def apply_wizard_settings(settings: WizardSettings) -> None:
     user_config["instance"]["url"] = settings.url
     user_config["instance"]["email"] = settings.email
     user_config["instance"]["token"] = settings.token
+    user_config["instance"]["account_id"] = settings.account_id
 
     if settings.url != previous_url:
         user_config["instance"]["api_profile"] = NOT_SET

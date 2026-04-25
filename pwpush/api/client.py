@@ -26,6 +26,21 @@ def normalize_base_url(url: str) -> str:
     return url.rstrip("/")
 
 
+def _flatten_form_data(data: dict[str, Any], prefix: str = "") -> dict[str, Any]:
+    """Flatten nested dicts to Rails-style form field names.
+
+    Example: {'push': {'payload': 'x'}} becomes {'push[payload]': 'x'}
+    """
+    result: dict[str, Any] = {}
+    for key, value in data.items():
+        new_key = f"{prefix}[{key}]" if prefix else key
+        if isinstance(value, dict):
+            result.update(_flatten_form_data(value, new_key))
+        else:
+            result[new_key] = value
+    return result
+
+
 def build_auth_headers(email: str, token: str) -> dict[str, str]:
     """Build the full set of supported auth headers."""
     valid_email = bool(email.strip()) and email != "Not Set"
@@ -81,12 +96,23 @@ def send_request(
         if method == "GET":
             return requests.get(url, headers=headers, timeout=timeout, verify=verify)
         if method == "POST":
+            # When uploading files, use data= instead of json= as they can't be combined
+            if upload_files is not None:
+                # Flatten nested dicts to Rails-style form field names
+                flat_data = _flatten_form_data(post_data) if post_data else {}
+                return requests.post(
+                    url,
+                    headers=headers,
+                    data=flat_data,
+                    timeout=timeout,
+                    files=upload_files,
+                    verify=verify,
+                )
             return requests.post(
                 url,
                 headers=headers,
                 json=post_data,
                 timeout=timeout,
-                files=upload_files,
                 verify=verify,
             )
         if method == "DELETE":

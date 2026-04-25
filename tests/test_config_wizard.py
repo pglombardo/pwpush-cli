@@ -36,6 +36,7 @@ def test_apply_wizard_settings_resets_cached_profile_on_instance_change():
         url="https://new.example",
         email="Not Set",
         token="Not Set",
+        account_id="Not Set",
         expire_after_days="7",
         expire_after_views="10",
         retrieval_step="True",
