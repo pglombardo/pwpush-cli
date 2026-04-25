@@ -174,7 +174,7 @@ def test_request_with_content_file(
     post_call = _get_post_call(mock_request_make_request)
     assert post_call is not None
     post_data = _get_request_data_from_call(post_call)
-    assert post_data["request"]["payload"] == "This is the request content from file"
+    assert post_data["request"]["request"] == "This is the request content from file"
     assert post_data["request"]["notify_emails_to"] == "team@example.com"
 
 
@@ -267,7 +267,7 @@ def test_request_with_content_file_and_attach_file(
     post_call = _get_post_call(mock_request_make_request)
     assert post_call is not None
     post_data = _get_request_data_from_call(post_call)
-    assert post_data["request"]["payload"] == "Please fill out this form"
+    assert post_data["request"]["request"] == "Please fill out this form"
     assert post_data["request"]["notify_emails_to"] == "hr@example.com"
     args, kwargs = post_call
     assert kwargs.get("upload_files") is not None
