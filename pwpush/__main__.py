@@ -1,44 +1,25 @@
 # mypy: disable-error-code="attr-defined"
 from typing import Any
 
-import getpass
 import json
-import secrets
-import string
-import sys
 import time
 from enum import Enum
 
 import typer
-from dateutil import parser
 from rich import print as rprint
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.table import Table
 
 from pwpush import version
-from pwpush.api.capabilities import (
-    detect_api_capabilities,
-    detect_api_profile,
-    email_notifications_enabled,
-)
+from pwpush.api.capabilities import detect_api_profile
 from pwpush.api.client import normalize_base_url, send_request
-from pwpush.api.endpoints import (
-    adapt_file_payload_for_profile,
-    adapt_file_uploads_for_profile,
-    adapt_text_payload_for_profile,
-    normalize_audit_events,
-    push_audit_path,
-    push_create_path,
-    push_expire_path,
-    push_preview_path,
-    validation_paths,
-)
 from pwpush.commands import config
+from pwpush.commands.auth import login_cmd, logout_cmd
 from pwpush.commands.config import save_config, user_config
-from pwpush.config_wizard import run_config_wizard
+from pwpush.commands.manage import audit_cmd, expire_cmd, list_cmd
+from pwpush.commands.push import HELP_TEXT as PUSH_HELP_TEXT
+from pwpush.commands.push import push_cmd, push_file_cmd
 from pwpush.options import cli_options, config_file_exists
-from pwpush.utils import check_secret_conditions, parse_boolean
+from pwpush.utils import parse_boolean
 
 
 class Color(str, Enum):
@@ -59,43 +40,6 @@ app = typer.Typer(
     context_settings=dict(help_option_names=["-h", "--help"]),
 )
 console = Console()
-
-
-def genpass(length=5):
-    """Generate a passphrase"""
-    from xkcdpass.xkcd_password import generate_wordlist, generate_xkcdpassword
-
-    wordlist = generate_wordlist(
-        wordfile=None, min_length=5, max_length=9, valid_chars="[a-zA-Z1-9]"
-    )
-    pw = generate_xkcdpassword(
-        wordlist,
-        interactive=False,
-        numwords=length,
-        acrostic=False,
-        delimiter=" ",
-        random_delimiters=True,
-        case="random",
-    )
-    return pw
-
-
-def generate_secret(length=50):
-    """Generate a secure random password"""
-    characters = string.ascii_letters + string.digits + string.punctuation
-    attempts = 0
-    while True:
-        secret = "".join(secrets.choice(characters) for _ in range(length))
-        if check_secret_conditions(secret, length=length):
-            return secret
-        attempts += 1
-
-
-def version_callback(print_version: bool) -> None:
-    """Print the version of the package."""
-    if print_version:
-        console.print(f"[yellow]pwpush[/] version: [bold blue]{version}[/]")
-        raise typer.Exit()
 
 
 def show_welcome_screen() -> None:
@@ -212,6 +156,8 @@ def current_api_profile(
     *, base_url: str | None = None, email: str | None = None, token: str | None = None
 ) -> str:
     """Resolve API profile for current or provided credentials."""
+    from pwpush.api.client import normalize_base_url
+
     resolved_base_url = normalize_base_url(base_url or user_config["instance"]["url"])
     resolved_email = email or user_config["instance"]["email"]
     resolved_token = token or user_config["instance"]["token"]
@@ -304,134 +250,161 @@ def load_cli_options(
         False,
         "--debug",
         "-d",
-        help="Enable debug mode with detailed request/response information.",
+        help="Enable debug mode with detailed request/response logging.",
     ),
-    help: bool = typer.Option(
-        False,
-        "--help",
-        "-h",
-        help="Show this message and exit.",
-    ),
-    show_version: bool = typer.Option(
+    version: bool = typer.Option(
         False,
         "--version",
-        callback=version_callback,
+        help="Show version information and exit.",
+        callback=lambda v: version_callback(v) if v else None,
         is_eager=True,
-        help="Show the version and exit.",
     ),
 ) -> None:
-    # CLI Args override configuration
-    cli_options["json"] = json
-    cli_options["verbose"] = verbose
-    cli_options["debug"] = debug
-    cli_options["pretty"] = pretty
+    """Password Pusher CLI - securely share passwords, secrets, and files.
 
-    # Show welcome screen if no command was provided
+    This tool allows you to push passwords, secrets, and files to Password Pusher
+    instances with automatic expiration controls. All pushes expire after a set
+    number of days or views, ensuring your sensitive data doesn't linger.
+    """
+    # Only show welcome screen when no subcommand is invoked
     if ctx.invoked_subcommand is None:
-        if help:
-            show_help_with_config()
-        elif not config_file_exists():
-            should_run_wizard = typer.confirm(
-                "No configuration file found. Run the setup wizard now?",
-                default=True,
+        if config_file_exists():
+            # Check if login is configured (email and token are set)
+            email_set = (
+                user_config["instance"]["email"] != "Not Set"
+                and user_config["instance"]["email"].strip() != ""
             )
-            if should_run_wizard:
-                run_config_wizard()
+            token_set = (
+                user_config["instance"]["token"] != "Not Set"
+                and user_config["instance"]["token"].strip() != ""
+            )
+
+            if email_set and token_set:
+                show_help_with_config()
             else:
                 show_welcome_screen()
         else:
             show_welcome_screen()
 
+    cli_options["json"] = json
+    cli_options["verbose"] = verbose
+    cli_options["pretty"] = pretty
+    cli_options["debug"] = debug
 
+
+def version_callback(print_version: bool) -> None:
+    """Print the version of the package."""
+    if print_version:
+        console.print(f"[yellow]pwpush[/] version: [bold blue]{version}[/]")
+        raise typer.Exit()
+
+
+def update_cli_options(
+    json: bool = False,
+    verbose: bool = False,
+    pretty: bool = False,
+    debug: bool = False,
+) -> None:
+    """Update global CLI options from command arguments."""
+    if json:
+        cli_options["json"] = json
+    if verbose:
+        cli_options["verbose"] = verbose
+    if debug:
+        cli_options["debug"] = debug
+    if pretty:
+        cli_options["pretty"] = pretty
+
+
+def error_json(message: str, status_code: int | None = None) -> None:
+    """Print error message in JSON format if --json is set, otherwise use rprint."""
+    if json_output():
+        error_obj: dict[str, Any] = {"error": message}
+        if status_code is not None:
+            error_obj["status_code"] = status_code
+        # Respect --pretty flag for JSON error output
+        dumps_kwargs: dict[str, Any] = {}
+        if pretty_output():
+            dumps_kwargs["indent"] = 2
+            dumps_kwargs["sort_keys"] = True
+        print(json.dumps(error_obj, **dumps_kwargs))
+    else:
+        if status_code is not None:
+            rprint(f"[red]Error {status_code}: {message}[/red]")
+        else:
+            rprint(f"[red]Error: {message}[/red]")
+
+
+def make_request(
+    method,
+    path,
+    post_data=None,
+    upload_files=None,
+    *,
+    base_url=None,
+    email=None,
+    token=None,
+    timeout=None,
+):
+    request_timeout = (
+        timeout if timeout is not None else (5 if method == "DELETE" else 30)
+    )
+    return send_request(
+        method,
+        base_url=base_url or user_config["instance"]["url"],
+        path=path,
+        email=email or user_config["instance"]["email"],
+        token=token or user_config["instance"]["token"],
+        post_data=post_data,
+        upload_files=upload_files,
+        timeout=request_timeout,
+        debug=debug_output(),
+    )
+
+
+def json_output() -> bool:
+    user_config_json = parse_boolean(user_config["cli"]["json"])
+    return cli_options["json"] or user_config_json
+
+
+def verbose_output() -> bool:
+    user_config_verbose = parse_boolean(user_config["cli"]["verbose"])
+    return cli_options["verbose"] or user_config_verbose
+
+
+def debug_output() -> bool:
+    user_config_debug = parse_boolean(user_config["cli"]["debug"])
+    return cli_options["debug"] or user_config_debug
+
+
+def pretty_output() -> bool:
+    user_config_pretty = parse_boolean(user_config["cli"]["pretty"])
+    return cli_options["pretty"] or user_config_pretty
+
+
+# Import and re-export generate_secret and generate_passphrase for backward compatibility
+# These are used by tests
+from pwpush.utils import generate_passphrase, generate_secret
+
+
+# Register commands from command modules
 @app.command()
 def login(
     url: str = typer.Option(user_config["instance"]["url"], prompt=True),
     email: str = typer.Option(user_config["instance"]["email"], prompt=True),
     token: str = typer.Option(user_config["instance"]["token"], prompt=True),
 ) -> None:
-    """
-    Login to the registered Password Pusher instance.
-
-    Your email and API token is required for authenticated operations.
-    Your API token is available at https://pwpush.com/en/users/token.
-
-    After login, you can use commands like 'list', 'audit', and 'expire'.
-    """
-    normalized_url = normalize_base_url(url)
-    api_profile = current_api_profile(base_url=normalized_url, email=email, token=token)
-    candidate_paths = validation_paths(api_profile)
-    r = None
-
-    for path in candidate_paths:
-        response = make_request(
-            "GET",
-            path,
-            base_url=normalized_url,
-            email=email,
-            token=token,
-            timeout=5,
-        )
-        # Keep searching when an endpoint doesn't exist on this server.
-        if response.status_code == 404:
-            continue
-
-        r = response
-        break
-
-    if r is None:
-        rprint(
-            "[red]Could not log in: no compatible authentication endpoint found.[/red]"
-        )
-        raise typer.Exit(1)
-
-    if r.status_code == 200:
-        user_config["instance"]["url"] = normalized_url
-        user_config["instance"]["email"] = email
-        user_config["instance"]["token"] = token
-        user_config["instance"]["api_profile"] = api_profile
-        user_config["instance"]["api_profile_checked_at"] = str(int(time.time()))
-        save_config()
-        rprint()
-        rprint("Login successful.  Credentials saved.")
-    else:
-        rprint("Could not log in:")
-        rprint(r)
+    """Login to the registered Password Pusher instance."""
+    login_cmd(url=url, email=email, token=token)
 
 
 @app.command()
 def logout() -> None:
-    """
-    Log out from the registered Password Pusher instance.
-    """
-    rprint(
-        "This will log you out from this command line tool and remove local credentials."
-    )
-    if confirmation := typer.prompt("Are you sure? [y/n]"):
-        user_config["instance"]["email"] = "Not Set"
-        user_config["instance"]["token"] = "Not Set"
-        save_config()
-        rprint("Log out successful.")
+    """Log out from the registered Password Pusher instance."""
+    logout_cmd()
 
 
-HELP_TEXT = """Push a new password, secret note or text.
-
-[dim]Examples:[/]
-[code]
-pwpush push                                      # Interactive mode
-pwpush push --secret "mypassword"                # Direct secret
-pwpush push --auto                               # Auto-generate password
-pwpush push --secret "data" --deletable          # Allow deletion by viewer
-pwpush push --secret "data" --retrieval-step     # Require click-through
-pwpush push --secret "https://..." --kind url    # Push as URL
-pwpush push --secret "QR data" --kind qr         # Push as QR code
-pwpush push --secret "data" --passphrase "pass"  # With passphrase
-pwpush push --secret "data" --prompt-passphrase  # Prompt for passphrase
-pwpush push --secret "data" --notify "admin@example.com"      # Notify on access (Pro)
-pwpush push --secret "data" --notify "a@b.com" --notify-locale "es"  # Spanish notifications
-[/code]"""
-
-
-@app.command(help=HELP_TEXT)
+@app.command(help=PUSH_HELP_TEXT)
 def push(
     ctx: typer.Context,
     days: int | None = typer.Option(None, help="Expire after this many days."),
@@ -486,212 +459,30 @@ def push(
     ),
     debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
 ) -> None:
-    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
-
-    data: dict[str, dict[str, Any]] = {"password": {}}
-    api_profile = current_api_profile()
-
-    # Validate kind parameter
-    valid_kinds = ["text", "url", "qr"]
-    if kind not in valid_kinds:
-        rprint(
-            f"[red]Error: Invalid kind '{kind}'. Must be one of: {', '.join(valid_kinds)}[/red]"
-        )
-        raise typer.Exit(1)
-
-    # Set the kind in the request data
-    data["password"]["kind"] = kind
-
-    # Track if input came from stdin pipe (to disable interactive prompts)
-    piped_input = False
-
-    # Priority: 1) --auto, 2) --secret CLI arg, 3) piped stdin, 4) interactive prompt
-    if auto:
-        secret = generate_secret(50)
-        passphrase = genpass(2)
-    elif secret is None:
-        # Check for piped input (stdin is not a TTY)
-        if not sys.stdin.isatty():
-            secret = sys.stdin.read().rstrip("\n\r")
-            piped_input = True
-            # Validate that piped input is not empty
-            if secret == "":
-                rprint(
-                    "[red]Error: No secret provided on stdin. Pipe a non-empty secret, "
-                    "use --secret '' to intentionally send an empty secret, or use --auto.[/red]"
-                )
-                raise typer.Exit(1)
-        else:
-            secret = getpass.getpass("Enter secret: ")
-            piped_input = False
-
-    # Interactive mode: ask if user wants to add a passphrase
-    # This happens when secret was prompted (not via --secret or pipe)
-    # and --passphrase wasn't provided, and --prompt-passphrase wasn't used
-    secret_from_cli = ctx.params.get("secret") is not None
-    if (
-        not secret_from_cli
-        and not piped_input
-        and secret is not None
-        and passphrase is None
-        and not prompt_passphrase
-        and not auto
-    ):
-        add_passphrase = typer.confirm(
-            "Would you like to add a passphrase to protect this secret?",
-            default=False,
-        )
-        if add_passphrase:
-            while True:
-                first = getpass.getpass("Enter passphrase: ")
-                if not first:
-                    rprint(
-                        "[yellow]Passphrase cannot be empty. Try again or press Ctrl+C to cancel.[/yellow]"
-                    )
-                    continue
-                second = getpass.getpass("Confirm passphrase: ")
-                if first == second:
-                    passphrase = first
-                    break
-                rprint("[red]Passphrases do not match. Please try again.[/red]")
-
-    # Handle --prompt-passphrase flag (explicit passphrase prompting)
-    if prompt_passphrase:
-        # User provided --prompt-passphrase flag, prompt for it
-        pp_first: str | None = None
-        pp_second: str | None = None
-        # Rolling out own here as there is no easy way to prompt with a confirmation and at the same time allow it to be omitted
-        while True:
-            if pp_first is None:
-                pp_first = getpass.getpass(
-                    "Enter passphrase (If the passphrase is empty, it will be omitted): "
-                )
-
-            if pp_first in ("c", "C", ""):
-                passphrase = None
-                break
-
-            if pp_second is None:
-                pp_second = getpass.getpass("Confirm passphrase: ")
-
-            if pp_first == pp_second:
-                passphrase = pp_first
-                break
-            else:
-                rprint("[red]Passphrases do not match. Please try again.[/red]")
-                pp_first = None
-                pp_second = None
-    # If passphrase is None (not provided), leave it as None
-    # If passphrase has a value (provided with --passphrase value), use that value
-
-    data["password"]["payload"] = secret
-
-    # Option and user preference processing
-    if days:
-        data["password"]["expire_after_days"] = days
-    elif user_config["expiration"]["expire_after_days"] != "Not Set":
-        data["password"]["expire_after_days"] = user_config["expiration"][
-            "expire_after_days"
-        ]
-
-    if note:
-        data["password"]["note"] = note
-
-    if views:
-        data["password"]["expire_after_views"] = views
-    elif user_config["expiration"]["expire_after_views"] != "Not Set":
-        data["password"]["expire_after_views"] = user_config["expiration"][
-            "expire_after_views"
-        ]
-
-    if deletable is not None:
-        data["password"]["deletable_by_viewer"] = deletable
-    elif user_config["expiration"]["deletable_by_viewer"] != "Not Set":
-        data["password"]["deletable_by_viewer"] = user_config["expiration"][
-            "deletable_by_viewer"
-        ]
-
-    if retrieval_step is not None:
-        data["password"]["retrieval_step"] = retrieval_step
-    elif user_config["expiration"]["retrieval_step"] != "Not Set":
-        data["password"]["retrieval_step"] = user_config["expiration"]["retrieval_step"]
-
-    if passphrase is not None:
-        data["password"]["passphrase"] = passphrase
-
-    # Email notification options require authentication
-    if notify or notify_locale:
-        token = user_config["instance"]["token"].strip()
-        if not token or token == "Not Set":
-            rprint(
-                "[red]Error: Email notifications require authentication. "
-                "Run 'pwpush login' or set a token with 'pwpush config set token <token>'.[/red]"
-            )
-            raise typer.Exit(1)
-
-        # Check if email notifications are supported on this instance
-        capabilities = detect_api_capabilities(
-            base_url=user_config["instance"]["url"],
-            email=user_config["instance"]["email"],
-            token=user_config["instance"]["token"],
-            debug=debug_output(),
-        )
-        if email_notifications_enabled(capabilities):
-            if notify:
-                data["password"]["notify_emails_to"] = notify
-            if notify_locale:
-                data["password"]["notify_emails_to_locale"] = notify_locale
-        else:
-            rprint(
-                "[yellow]Warning: Email notifications are not enabled on this instance. "
-                "Options ignored.[/yellow]"
-            )
-
-    # Lets add a progressbar to notify the something is happing.
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        transient=True,
-    ) as progress:
-        progress.add_task(description="Processing...", total=None)
-
-        create_path = push_create_path(api_profile, kind)
-        request_data = adapt_text_payload_for_profile(data, api_profile)
-        response = make_request("POST", create_path, post_data=request_data)
-
-        if response.status_code == 201:
-            body = response.json()
-            preview_path = push_preview_path(api_profile, body["url_token"], kind)
-            response = make_request("GET", preview_path)
-
-            body = response.json()
-            if json_output():
-                # Respect --pretty flag
-                dumps_kwargs: dict[str, Any] = {}
-                if pretty_output():
-                    dumps_kwargs["indent"] = 2
-                    dumps_kwargs["sort_keys"] = True
-                print(json.dumps(body, **dumps_kwargs))
-            else:
-                rprint(f"The secret has been pushed to:\n{body['url']}")
-
-            if auto and passphrase:
-                rprint(f"Passphrase is: {passphrase}")
-        else:
-            # Safely parse error response
-            error_message = response.text
-            try:
-                error_body = response.json()
-                if isinstance(error_body, dict):
-                    error_message = error_body.get("error", response.text)
-            except (json.JSONDecodeError, ValueError):
-                pass
-            error_json(error_message, response.status_code)
-            raise typer.Exit(1)
+    """Push a new password, secret note or text."""
+    push_cmd(
+        ctx=ctx,
+        days=days,
+        views=views,
+        deletable=deletable,
+        retrieval_step=retrieval_step,
+        note=note,
+        auto=auto,
+        secret=secret,
+        passphrase=passphrase,
+        prompt_passphrase=prompt_passphrase,
+        kind=kind,
+        notify=notify,
+        notify_locale=notify_locale,
+        json=json,
+        verbose=verbose,
+        pretty=pretty,
+        debug=debug,
+    )
 
 
 @app.command(name="push-file")
-def pushFile(
+def push_file(
     days: int | None = typer.Option(None, help="Expire after this many days."),
     views: int | None = typer.Option(None, help="Expire after this many views."),
     deletable: bool | None = typer.Option(
@@ -715,9 +506,7 @@ def pushFile(
         "--notify-locale",
         help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
     ),
-    payload: str = typer.Argument(
-        "",
-    ),
+    payload: str = typer.Argument(""),
     json: bool = typer.Option(
         False, "--json", "-j", help="Output results in JSON format."
     ),
@@ -729,170 +518,21 @@ def pushFile(
     ),
     debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
 ) -> None:
-    """
-    Push a new file. Requires login with an API token.
-
-    Examples:
-        pwpush push-file document.pdf                    # Upload a file
-        pwpush push-file data.txt --deletable           # Allow deletion by viewer
-        pwpush push-file config.json --retrieval-step   # Require click-through
-        pwpush push-file backup.zip --days 7 --views 5  # Custom expiration
-        pwpush push-file doc.pdf --notify "admin@example.com"      # Notify on access (Pro)
-    """
-    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
-
-    require_api_token("push-file")
-    api_profile = current_api_profile()
-
-    data: dict[str, dict[str, Any]] = {"file_push": {}}
-    data["file_push"]["payload"] = ""
-    data["file_push"]["kind"] = "file"
-
-    # Option and user preference processing
-    if days:
-        data["file_push"]["expire_after_days"] = days
-    elif user_config["expiration"]["expire_after_days"] != "Not Set":
-        data["file_push"]["expire_after_days"] = user_config["expiration"][
-            "expire_after_days"
-        ]
-
-    if views:
-        data["file_push"]["expire_after_views"] = views
-    elif user_config["expiration"]["expire_after_views"] != "Not Set":
-        data["file_push"]["expire_after_views"] = user_config["expiration"][
-            "expire_after_views"
-        ]
-
-    if deletable is not None:
-        data["file_push"]["deletable_by_viewer"] = deletable
-    elif user_config["expiration"]["deletable_by_viewer"] != "Not Set":
-        data["file_push"]["deletable_by_viewer"] = user_config["expiration"][
-            "deletable_by_viewer"
-        ]
-
-    if retrieval_step is not None:
-        data["file_push"]["retrieval_step"] = retrieval_step
-    elif user_config["expiration"]["retrieval_step"] != "Not Set":
-        data["file_push"]["retrieval_step"] = user_config["expiration"][
-            "retrieval_step"
-        ]
-
-    if note:
-        data["file_push"]["note"] = note
-
-    # Email notification options require authentication
-    if notify or notify_locale:
-        token = user_config["instance"]["token"].strip()
-        if not token or token == "Not Set":
-            error_json(
-                "Email notifications require authentication. "
-                "Run 'pwpush login' or set a token with 'pwpush config set token <token>'."
-            )
-            raise typer.Exit(1)
-
-        # Check if email notifications are supported on this instance
-        capabilities = detect_api_capabilities(
-            base_url=user_config["instance"]["url"],
-            email=user_config["instance"]["email"],
-            token=user_config["instance"]["token"],
-            debug=debug_output(),
-        )
-        if email_notifications_enabled(capabilities):
-            if notify:
-                data["file_push"]["notify_emails_to"] = notify
-            if notify_locale:
-                data["file_push"]["notify_emails_to_locale"] = notify_locale
-        else:
-            if not json_output():
-                rprint(
-                    "[yellow]Warning: Email notifications are not enabled on this instance. "
-                    "Options ignored.[/yellow]"
-                )
-
-    try:
-        with open(payload, "rb") as fd:
-            upload_files = {"file_push[files][]": fd}
-            create_path = push_create_path(api_profile, "file")
-            request_data = adapt_file_payload_for_profile(data, api_profile)
-            request_files = adapt_file_uploads_for_profile(upload_files, api_profile)
-            response = make_request(
-                "POST",
-                create_path,
-                upload_files=request_files,
-                post_data=request_data,
-            )
-    except FileNotFoundError:
-        error_json(f"File '{payload}' not found.")
-        raise typer.Exit(1)
-    except PermissionError:
-        error_json(f"Permission denied accessing file '{payload}'.")
-        raise typer.Exit(1)
-    except Exception as e:
-        error_json(f"Error reading file '{payload}': {str(e)}")
-        raise typer.Exit(1)
-
-    if response.status_code == 201:
-        body = response.json()
-        preview_path = push_preview_path(api_profile, body["url_token"], "file")
-        response = make_request("GET", preview_path)
-
-        body = response.json()
-        if json_output():
-            # Respect --pretty flag
-            dumps_kwargs: dict[str, Any] = {}
-            if pretty_output():
-                dumps_kwargs["indent"] = 2
-                dumps_kwargs["sort_keys"] = True
-            print(json.dumps(body, **dumps_kwargs))
-        else:
-            rprint(body["url"])
-    else:
-        # Safely parse error response
-        error_message = response.text
-        try:
-            error_body = response.json()
-            if isinstance(error_body, dict):
-                error_message = error_body.get("error", response.text)
-        except (json.JSONDecodeError, ValueError):
-            pass
-        error_json(error_message, response.status_code)
-        raise typer.Exit(1)
-
-
-def update_cli_options(
-    json: bool = False,
-    verbose: bool = False,
-    pretty: bool = False,
-    debug: bool = False,
-) -> None:
-    """Update global CLI options from command arguments."""
-    if json:
-        cli_options["json"] = json
-    if verbose:
-        cli_options["verbose"] = verbose
-    if debug:
-        cli_options["debug"] = debug
-    if pretty:
-        cli_options["pretty"] = pretty
-
-
-def error_json(message: str, status_code: int | None = None) -> None:
-    """Print error message in JSON format if --json is set, otherwise use rprint."""
-    if json_output():
-        error_obj: dict[str, Any] = {"error": message}
-        if status_code is not None:
-            error_obj["status_code"] = status_code
-        # Respect --pretty flag for JSON error output
-        dumps_kwargs: dict[str, Any] = {}
-        if pretty_output():
-            dumps_kwargs["indent"] = 2
-            dumps_kwargs["sort_keys"] = True
-        print(json.dumps(error_obj, **dumps_kwargs))
-    else:
-        if status_code is not None:
-            rprint(f"[red]Error {status_code}: {message}[/red]")
-        else:
-            rprint(f"[red]Error: {message}[/red]")
+    """Push a new file. Requires login with an API token."""
+    push_file_cmd(
+        days=days,
+        views=views,
+        deletable=deletable,
+        retrieval_step=retrieval_step,
+        note=note,
+        notify=notify,
+        notify_locale=notify_locale,
+        payload=payload,
+        json=json,
+        verbose=verbose,
+        pretty=pretty,
+        debug=debug,
+    )
 
 
 @app.command()
@@ -912,42 +552,15 @@ def expire(
     ),
     debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
 ) -> None:
-    """
-    Expire a push.
-    """
-    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
-
-    if not url_token:
-        typer.echo(ctx.get_help())
-        raise typer.Exit()
-
-    require_api_token("expire")
-
-    path = push_expire_path(current_api_profile(), url_token)
-
-    response = make_request("DELETE", path)
-
-    if response.status_code == 200:
-        body = response.json()
-
-        if json_output():
-            # Respect --pretty flag
-            dumps_kwargs: dict[str, Any] = {}
-            if pretty_output():
-                dumps_kwargs["indent"] = 2
-                dumps_kwargs["sort_keys"] = True
-            print(json.dumps(body, **dumps_kwargs))
-    else:
-        # Safely parse error response
-        error_message = response.text
-        try:
-            error_body = response.json()
-            if isinstance(error_body, dict):
-                error_message = error_body.get("error", response.text)
-        except (json.JSONDecodeError, ValueError):
-            pass
-        error_json(error_message, response.status_code)
-        raise typer.Exit(1)
+    """Expire a push."""
+    expire_cmd(
+        ctx=ctx,
+        url_token=url_token,
+        json=json,
+        verbose=verbose,
+        pretty=pretty,
+        debug=debug,
+    )
 
 
 @app.command()
@@ -967,66 +580,15 @@ def audit(
     ),
     debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
 ) -> None:
-    """
-    Show the audit log for the given push. Requires login with an API token.
-    """
-    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
-
-    if not url_token:
-        typer.echo(ctx.get_help())
-        raise typer.Exit()
-
-    require_api_token("audit")
-
-    if user_config["instance"]["email"] == "Not Set":
-        error_json("You must log into an instance first.")
-        raise typer.Exit(1)
-
-    path = push_audit_path(current_api_profile(), url_token)
-
-    response = make_request("GET", path)
-
-    if response.status_code == 200:
-        body = response.json()
-
-        if json_output():
-            # Respect --pretty flag
-            dumps_kwargs: dict[str, Any] = {}
-            if pretty_output():
-                dumps_kwargs["indent"] = 2
-                dumps_kwargs["sort_keys"] = True
-            print(json.dumps(body, **dumps_kwargs))
-        else:
-            rprint()
-            rprint(f"[bold]=== Audit Log for {url_token}:[/bold]")
-            rprint()
-
-            table = Table(
-                "IP", "User Agent", "Referrer", "Successful", "When", "Operation"
-            )
-
-            for event in normalize_audit_events(body):
-                table.add_row(
-                    event["ip"],
-                    event["user_agent"],
-                    event["referrer"],
-                    event["successful"],
-                    event["created_at"],
-                    event["kind"],
-                )
-
-            console.print(table)
-    else:
-        # Safely parse error response
-        error_message = response.text
-        try:
-            error_body = response.json()
-            if isinstance(error_body, dict):
-                error_message = error_body.get("error", response.text)
-        except (json.JSONDecodeError, ValueError):
-            pass
-        error_json(error_message, response.status_code)
-        raise typer.Exit(1)
+    """Show the audit log for the given push. Requires login with an API token."""
+    audit_cmd(
+        ctx=ctx,
+        url_token=url_token,
+        json=json,
+        verbose=verbose,
+        pretty=pretty,
+        debug=debug,
+    )
 
 
 @app.command()
@@ -1043,132 +605,17 @@ def list(
     ),
     debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
 ) -> None:
-    """
-    List active pushes. Requires login with an API token.
-    """
-    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
-
-    require_api_token("list")
-
-    if user_config["instance"]["email"] == "Not Set":
-        error_json("You must log into an instance first.")
-        raise typer.Exit(1)
-
-    paths = validation_paths(current_api_profile(), expired=expired)
-    r = None
-    for path in paths:
-        response = make_request("GET", path)
-        if response.status_code == 404:
-            continue
-        r = response
-        break
-
-    if r is None:
-        error_json("No compatible list endpoint found on this instance.")
-        raise typer.Exit(1)
-
-    if r.status_code == 200:
-        pushes = r.json()
-        if json_output():
-            # Respect --pretty flag
-            dumps_kwargs: dict[str, Any] = {}
-            if pretty_output():
-                dumps_kwargs["indent"] = 2
-                dumps_kwargs["sort_keys"] = True
-            print(json.dumps(pushes, **dumps_kwargs))
-        else:
-            rprint()
-            if expired:
-                rprint("[bold]=== Expired Pushes:[/bold]")
-            else:
-                rprint("[bold]=== Active Pushes:[/bold]")
-            rprint()
-
-            table = Table(
-                "Secret URL Token",
-                "Note",
-                "Views",
-                "Days",
-                "Deletable by Viewer",
-                "Retrieval Step",
-                "Created",
-            )
-            for push in pushes:
-                push["created_at"] = parser.isoparse(push["created_at"]).strftime(
-                    "%m/%d/%Y, %H:%M:%S UTC"
-                )
-
-                table.add_row(
-                    push["url_token"],
-                    f'{push["note"]}',
-                    f'{push["expire_after_views"] - push["views_remaining"]}/{push["expire_after_views"]}',
-                    f'{push["expire_after_days"] - push["days_remaining"]}/{push["expire_after_days"]}',
-                    f'{push["deletable_by_viewer"]}',
-                    f'{push["retrieval_step"]}',
-                    f'{push["created_at"]}',
-                )
-
-            console.print(table)
-    else:
-        # Safely parse error response
-        error_message = r.text
-        try:
-            error_body = r.json()
-            if isinstance(error_body, dict):
-                error_message = error_body.get("error", r.text)
-        except (json.JSONDecodeError, ValueError):
-            pass
-        error_json(error_message, r.status_code)
-        raise typer.Exit(1)
-
-
-def make_request(
-    method,
-    path,
-    post_data=None,
-    upload_files=None,
-    *,
-    base_url=None,
-    email=None,
-    token=None,
-    timeout=None,
-):
-    request_timeout = (
-        timeout if timeout is not None else (5 if method == "DELETE" else 30)
-    )
-    return send_request(
-        method,
-        base_url=base_url or user_config["instance"]["url"],
-        path=path,
-        email=email or user_config["instance"]["email"],
-        token=token or user_config["instance"]["token"],
-        post_data=post_data,
-        upload_files=upload_files,
-        timeout=request_timeout,
-        debug=debug_output(),
+    """List active pushes. Requires login with an API token."""
+    list_cmd(
+        expired=expired,
+        json=json,
+        verbose=verbose,
+        pretty=pretty,
+        debug=debug,
     )
 
 
-def json_output() -> bool:
-    user_config_json = parse_boolean(user_config["cli"]["json"])
-    return cli_options["json"] or user_config_json
-
-
-def verbose_output() -> bool:
-    user_config_verbose = parse_boolean(user_config["cli"]["verbose"])
-    return cli_options["verbose"] or user_config_verbose
-
-
-def debug_output() -> bool:
-    user_config_debug = parse_boolean(user_config["cli"]["debug"])
-    return cli_options["debug"] or user_config_debug
-
-
-def pretty_output() -> bool:
-    user_config_pretty = parse_boolean(user_config["cli"]["pretty"])
-    return cli_options["pretty"] or user_config_pretty
-
-
+# Register config subcommands
 app.add_typer(
     config.app,
     name="config",

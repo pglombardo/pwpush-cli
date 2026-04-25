@@ -2,7 +2,10 @@
 
 from typing import Any
 
+import secrets
 import string
+
+from xkcdpass.xkcd_password import generate_wordlist, generate_xkcdpassword
 
 
 def mask_sensitive_value(value: str, visible_chars: int = 4) -> str:
@@ -87,3 +90,46 @@ def check_secret_conditions(
     else:
         print(f"{secret} does not pass all conditions")
         return False
+
+
+def generate_passphrase(length: int = 5) -> str:
+    """Generate a passphrase using xkcdpass.
+
+    Args:
+        length: Number of words in the passphrase (default: 5)
+
+    Returns:
+        str: A randomly generated passphrase
+    """
+    wordlist = generate_wordlist(
+        wordfile=None, min_length=5, max_length=9, valid_chars="[a-zA-Z1-9]"
+    )
+    return str(
+        generate_xkcdpassword(
+            wordlist,
+            interactive=False,
+            numwords=length,
+            acrostic=False,
+            delimiter=" ",
+            random_delimiters=True,
+            case="random",
+        )
+    )
+
+
+def generate_secret(length: int = 50) -> str:
+    """Generate a secure random password.
+
+    Args:
+        length: Length of the password (default: 50)
+
+    Returns:
+        str: A randomly generated secure password
+    """
+    characters = string.ascii_letters + string.digits + string.punctuation
+    attempts = 0
+    while True:
+        secret = "".join(secrets.choice(characters) for _ in range(length))
+        if check_secret_conditions(secret, length=length):
+            return secret
+        attempts += 1

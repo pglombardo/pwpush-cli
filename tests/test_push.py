@@ -7,9 +7,9 @@ import requests
 from typer.testing import CliRunner
 
 import pwpush
-from pwpush.__main__ import app, generate_secret, genpass
+from pwpush.__main__ import app
 from pwpush.commands.config import user_config
-from pwpush.utils import check_secret_conditions
+from pwpush.utils import check_secret_conditions, generate_passphrase, generate_secret
 
 # import the mocks
 from tests import *
@@ -75,8 +75,8 @@ def test_config_show_in_json():
     assert result.exit_code == 0
 
 
-def test_genpass():
-    pw = genpass(2)
+def test_generate_passphrase():
+    pw = generate_passphrase(2)
     assert pw
 
 
@@ -324,7 +324,7 @@ def test_push_with_notify_when_enabled(mock_make_request, monkeypatch):
         "features": {"email_auto_dispatch": True},
     }
     monkeypatch.setattr(
-        "pwpush.__main__.detect_api_capabilities",
+        "pwpush.commands.push.detect_api_capabilities",
         lambda **kwargs: mock_capabilities,
     )
 
@@ -352,7 +352,7 @@ def test_push_with_notify_when_disabled(mock_make_request, monkeypatch):
         "features": {"email_auto_dispatch": False},
     }
     monkeypatch.setattr(
-        "pwpush.__main__.detect_api_capabilities",
+        "pwpush.commands.push.detect_api_capabilities",
         lambda **kwargs: mock_capabilities,
     )
 
@@ -379,7 +379,7 @@ def test_push_with_notify_locale(mock_make_request, monkeypatch):
         "features": {"email_auto_dispatch": True},
     }
     monkeypatch.setattr(
-        "pwpush.__main__.detect_api_capabilities",
+        "pwpush.commands.push.detect_api_capabilities",
         lambda **kwargs: mock_capabilities,
     )
 

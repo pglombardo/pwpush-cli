@@ -20,7 +20,7 @@ app = typer.Typer(
     rich_markup_mode="markdown",
     context_settings=dict(help_option_names=["-h", "--help"]),
 )
-__all__ = ["app", "user_config"]
+__all__ = ["app", "save_config", "user_config"]
 
 console = Console()
 

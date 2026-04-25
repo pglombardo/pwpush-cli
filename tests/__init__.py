@@ -27,7 +27,7 @@ def mock_make_request():
         patch("pwpush.__main__.current_api_profile", return_value="legacy"),
         patch("pwpush.__main__.make_request") as mock,
         patch(
-            "pwpush.__main__.detect_api_capabilities",
+            "pwpush.commands.push.detect_api_capabilities",
             return_value={"api_version": None, "features": {}},
         ),
     ):
@@ -42,7 +42,7 @@ def mock_make_request():
 @pytest.fixture
 def mock_getpass():
     with patch(
-        "pwpush.__main__.getpass.getpass", side_effect=["passphrase", "passphrase"]
+        "pwpush.commands.push.getpass.getpass", side_effect=["passphrase", "passphrase"]
     ) as mock:
         yield mock
 
@@ -50,7 +50,7 @@ def mock_getpass():
 @pytest.fixture
 def mock_create_password():
     with patch(
-        "pwpush.__main__.typer.prompt", side_effect=["secret", "secret"]
+        "pwpush.commands.push.typer.prompt", side_effect=["secret", "secret"]
     ) as mock:
         yield mock
 
@@ -58,7 +58,7 @@ def mock_create_password():
 @pytest.fixture
 def mock_generate_password():
     with patch(
-        "pwpush.__main__.generate_secret", return_value="auto_generated_password"
+        "pwpush.utils.generate_secret", return_value="auto_generated_password"
     ) as mock:
         yield mock
 
@@ -66,6 +66,6 @@ def mock_generate_password():
 @pytest.fixture
 def mock_genpass():
     with patch(
-        "pwpush.__main__.genpass", return_value="auto_generated_passphrase"
+        "pwpush.utils.generate_passphrase", return_value="auto_generated_passphrase"
     ) as mock:
         yield mock
