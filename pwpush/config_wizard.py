@@ -7,7 +7,7 @@ from rich.table import Table
 
 from pwpush.api.client import normalize_base_url
 from pwpush.options import save_config, user_config, user_config_file
-from pwpush.utils import parse_boolean
+from pwpush.utils import mask_sensitive_value, parse_boolean
 
 NOT_SET = "Not Set"
 
@@ -181,11 +181,7 @@ def collect_wizard_settings() -> WizardSettings:
     ):
         if has_existing_token:
             # Show masked token and allow updating
-            masked = (
-                existing_token[:4] + "****" + existing_token[-4:]
-                if len(existing_token) > 8
-                else "****"
-            )
+            masked = mask_sensitive_value(existing_token, visible_chars=4)
             console.print(
                 f"[dim]Current token: {masked} (press Enter to keep, or type new token)[/dim]"
             )
