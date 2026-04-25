@@ -98,12 +98,39 @@ etc
 
 ### Building and releasing your package
 
-Building a new version of the application contains steps:
+We use an automated release process via the `release` target in the Makefile. This integrates with our `release-drafter` GitHub Action.
 
-- Bump the version of your package `poetry version <version>`. You can pass the new version explicitly, or a rule such as `major`, `minor`, or `patch`. For more details, refer to the [Semantic Versions](https://semver.org/) standard.
-- Make a commit to `GitHub`.
-- Create a `GitHub release`.
-- And... publish 🙂 `poetry publish --build`
+#### Automated Release (Recommended)
+
+Run a single command to perform the entire release:
+
+```bash
+make release bump=patch   # or minor, major
+```
+
+This will:
+
+1. Bump the version using `poetry version <bump>`
+2. Commit the `pyproject.toml` change
+3. Create an annotated git tag (`vX.Y.Z`)
+4. Push the commit and tag to the `oss` remote
+5. Publish the GitHub release (converts the release-drafter draft to a published release)
+6. Build and publish to PyPI with `poetry publish --build`
+
+**Prerequisites:**
+- GitHub CLI (`gh`) installed and authenticated (`gh auth status`)
+- Poetry configured with PyPI credentials (`poetry config pypi-token.pypi <token>`)
+- Write access to the GitHub repository
+
+#### Manual Release (Legacy)
+
+If you prefer to release manually, the steps are:
+
+1. Bump version: `poetry version <patch|minor|major>`
+2. Commit the change: `git add pyproject.toml && git commit -m "Bump version"`
+3. Create and push a tag: `git tag vX.Y.Z && git push oss vX.Y.Z`
+4. Publish GitHub release (manually via GitHub UI or `gh release edit vX.Y.Z --draft=false`)
+5. Publish to PyPI: `poetry publish --build`
 
 ## 🎯 What's next
 
@@ -352,6 +379,28 @@ Or to remove pycache, build and docker image run:
 ```bash
 make clean-all
 ```
+
+</p>
+</details>
+
+<details>
+<summary>10. Release</summary>
+<p>
+
+Automated release to GitHub and PyPI (requires `gh` CLI and Poetry PyPI token):
+
+```bash
+make release bump=patch   # or minor, major
+```
+
+This command will:
+- Bump the package version
+- Commit and tag the release
+- Push to the `oss` remote
+- Publish the GitHub release (from release-drafter draft)
+- Build and publish to PyPI
+
+See the [Building and releasing](#building-and-releasing-your-package) section for more details.
 
 </p>
 </details>
