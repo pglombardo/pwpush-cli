@@ -241,9 +241,6 @@ def send_request(
 
     Returns:
         The HTTP response object
-
-    Raises:
-        typer.Exit: On network errors or unsupported methods
     """
     last_response = None
 
