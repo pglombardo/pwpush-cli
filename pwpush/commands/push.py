@@ -85,6 +85,7 @@ def _make_request(
     email=None,
     token=None,
     timeout=None,
+    on_rate_limit_retry=None,
 ):
     """Make an API request with the given parameters."""
     from pwpush.__main__ import make_request
@@ -98,6 +99,7 @@ def _make_request(
         email=email,
         token=token,
         timeout=timeout,
+        on_rate_limit_retry=on_rate_limit_retry,
     )
 
 
@@ -336,6 +338,13 @@ def push_cmd(
                 "Options ignored.[/yellow]"
             )
 
+    # Callback to show rate limit retry feedback
+    def on_rate_limit_retry(attempt: int, delay: float, response) -> None:
+        if not _json_output():
+            rprint(
+                f"[yellow]Rate limit exceeded. Retrying in {delay:.1f}s (attempt {attempt}/3)...[/yellow]"
+            )
+
     # Lets add a progressbar to notify the something is happing.
     with Progress(
         SpinnerColumn(),
@@ -346,12 +355,19 @@ def push_cmd(
 
         create_path = push_create_path(api_profile, kind)
         request_data = adapt_text_payload_for_profile(data, api_profile)
-        response = _make_request("POST", create_path, post_data=request_data)
+        response = _make_request(
+            "POST",
+            create_path,
+            post_data=request_data,
+            on_rate_limit_retry=on_rate_limit_retry,
+        )
 
         if response.status_code == 201:
             body = response.json()
             preview_path = push_preview_path(api_profile, body["url_token"], kind)
-            response = _make_request("GET", preview_path)
+            response = _make_request(
+                "GET", preview_path, on_rate_limit_retry=on_rate_limit_retry
+            )
 
             body = response.json()
             if _json_output():
@@ -497,6 +513,13 @@ def push_file_cmd(
                     "Options ignored.[/yellow]"
                 )
 
+    # Callback to show rate limit retry feedback
+    def on_rate_limit_retry_file(attempt: int, delay: float, response) -> None:
+        if not _json_output():
+            rprint(
+                f"[yellow]Rate limit exceeded. Retrying in {delay:.1f}s (attempt {attempt}/3)...[/yellow]"
+            )
+
     try:
         with open(payload, "rb") as fd:
             upload_files = {"file_push[files][]": fd}
@@ -508,6 +531,7 @@ def push_file_cmd(
                 create_path,
                 upload_files=request_files,
                 post_data=request_data,
+                on_rate_limit_retry=on_rate_limit_retry_file,
             )
     except FileNotFoundError:
         _error_json(f"File '{payload}' not found.")
@@ -522,7 +546,9 @@ def push_file_cmd(
     if response.status_code == 201:
         body = response.json()
         preview_path = push_preview_path(api_profile, body["url_token"], "file")
-        response = _make_request("GET", preview_path)
+        response = _make_request(
+            "GET", preview_path, on_rate_limit_retry=on_rate_limit_retry_file
+        )
 
         body = response.json()
         if _json_output():
