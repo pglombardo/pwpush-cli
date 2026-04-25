@@ -469,6 +469,10 @@ def push(
         "--notify-locale",
         help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
     ),
+    name: str | None = typer.Option(
+        None,
+        help="A name for the push shown in the dashboard, notifications and emails.",
+    ),
     json: bool = typer.Option(
         False, "--json", "-j", help="Output results in JSON format."
     ),
@@ -495,6 +499,7 @@ def push(
         kind=kind,
         notify=notify,
         notify_locale=notify_locale,
+        name=name,
         json=json,
         verbose=verbose,
         pretty=pretty,
@@ -527,6 +532,10 @@ def push_file(
         "--notify-locale",
         help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
     ),
+    name: str | None = typer.Option(
+        None,
+        help="A name for the file push shown in the dashboard, notifications and emails.",
+    ),
     payload: str = typer.Argument(""),
     json: bool = typer.Option(
         False, "--json", "-j", help="Output results in JSON format."
@@ -548,6 +557,7 @@ def push_file(
         note=note,
         notify=notify,
         notify_locale=notify_locale,
+        name=name,
         payload=payload,
         json=json,
         verbose=verbose,

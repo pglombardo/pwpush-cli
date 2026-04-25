@@ -440,3 +440,29 @@ def test_email_notifications_enabled_helper():
 
     # Disabled - empty dict
     assert not email_notifications_enabled({})
+
+
+def test_push_with_name(mock_make_request):
+    """Test push with --name option includes name in payload."""
+    result = runner.invoke(
+        app, ["push", "--secret", "test-secret", "--name", "Production Password"]
+    )
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    assert post_call[1]["post_data"]["password"]["name"] == "Production Password"
+
+
+def test_push_file_with_name(mock_make_request, monkeypatch):
+    """Test push-file with --name option includes name in payload."""
+    monkeypatch.setitem(user_config["instance"], "email", "user@example.test")
+    monkeypatch.setitem(user_config["instance"], "token", "token-value")
+
+    result = runner.invoke(
+        app, ["push-file", "./README.md", "--name", "Q4 Financial Report"]
+    )
+    assert result.exit_code == 0
+    post_call = _get_post_call(mock_make_request)
+    assert post_call is not None
+    # For file pushes, the data structure uses "file_push" key
+    assert post_call[1]["post_data"]["file_push"]["name"] == "Q4 Financial Report"

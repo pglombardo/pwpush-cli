@@ -79,6 +79,8 @@ def adapt_text_payload_for_profile(
         push_payload["expire_after_views"] = source["expire_after_views"]
     if "note" in source:
         push_payload["note"] = source["note"]
+    if "name" in source:
+        push_payload["name"] = source["name"]
     if "deletable_by_viewer" in source:
         push_payload["deletable_by_viewer"] = source["deletable_by_viewer"]
     if "retrieval_step" in source:
@@ -117,6 +119,8 @@ def adapt_file_payload_for_profile(
         push_payload["expire_after_views"] = source["expire_after_views"]
     if "note" in source:
         push_payload["note"] = source["note"]
+    if "name" in source:
+        push_payload["name"] = source["name"]
     if "deletable_by_viewer" in source:
         push_payload["deletable_by_viewer"] = source["deletable_by_viewer"]
     if "retrieval_step" in source:

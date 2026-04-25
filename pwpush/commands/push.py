@@ -165,6 +165,10 @@ def push_cmd(
         "--notify-locale",
         help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
     ),
+    name: str | None = typer.Option(
+        None,
+        help="A name for the push shown in the dashboard, notifications and emails.",
+    ),
     json: bool = typer.Option(
         False, "--json", "-j", help="Output results in JSON format."
     ),
@@ -287,6 +291,9 @@ def push_cmd(
 
     if note:
         data["password"]["note"] = note
+
+    if name:
+        data["password"]["name"] = name
 
     if views:
         data["password"]["expire_after_views"] = views
@@ -419,6 +426,10 @@ def push_file_cmd(
         "--notify-locale",
         help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
     ),
+    name: str | None = typer.Option(
+        None,
+        help="A name for the file push shown in the dashboard, notifications and emails.",
+    ),
     payload: str = typer.Argument(
         "",
     ),
@@ -483,6 +494,9 @@ def push_file_cmd(
 
     if note:
         data["file_push"]["note"] = note
+
+    if name:
+        data["file_push"]["name"] = name
 
     # Email notification options require authentication
     if notify or notify_locale:
