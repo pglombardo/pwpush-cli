@@ -1,6 +1,7 @@
 from typing import Any
 
 import configparser
+import os
 from pathlib import Path
 
 import typer
@@ -92,11 +93,13 @@ def validate_user_config() -> bool:
 
 def save_config() -> None:
     """
-    Save `user_config` out to file
+    Save `user_config` out to file with restricted permissions (owner read/write only).
     """
     user_config_file.parent.mkdir(parents=True, exist_ok=True)
     with open(user_config_file, "w") as file:
         user_config.write(file)
+    # Restrict permissions to owner read/write only (0o600) to protect API tokens
+    os.chmod(user_config_file, 0o600)
 
 
 def json_output() -> bool:
