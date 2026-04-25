@@ -146,7 +146,7 @@ def test_request_with_positional_text(mock_request_make_request, mock_request_en
     assert args[1] == "/api/v2/requests"
     post_data = _get_request_data_from_call(post_call)
     assert (
-        post_data["request"]["payload"]
+        post_data["request"]["request"]
         == "Please send me the production database password"
     )
     assert post_data["request"]["notify_emails_to"] == "admin@example.com"

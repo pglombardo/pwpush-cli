@@ -219,7 +219,7 @@ def adapt_request_payload_for_profile(
 
     source = payload["request"]
     request_payload: dict[str, Any] = {
-        "payload": source["payload"],
+        "request": source["request"],
     }
     if "notify_emails_to" in source:
         request_payload["notify_emails_to"] = source["notify_emails_to"]

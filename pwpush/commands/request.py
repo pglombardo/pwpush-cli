@@ -198,7 +198,7 @@ def request_cmd(
 
     # Build the request payload
     data: dict[str, dict[str, Any]] = {"request": {}}
-    data["request"]["payload"] = request_content
+    data["request"]["request"] = request_content
 
     # Add notification email (required for requests)
     # Check if email notifications are supported on this instance
