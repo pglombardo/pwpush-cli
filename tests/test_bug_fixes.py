@@ -836,3 +836,51 @@ def test_audit_help_mentions_api_token_requirement() -> None:
 
     assert result.exit_code == 0
     assert "Requires login with an API token." in result.stdout
+
+
+def test_version_flag_prints_version() -> None:
+    """Test --version flag prints version and exits immediately."""
+    result = runner.invoke(app, ["--version"])
+
+    assert result.exit_code == 0
+    assert "pwpush version:" in result.stdout
+    # Should not show welcome screen or prompt for config
+    assert "Password Pusher CLI" not in result.stdout
+    assert "setup wizard" not in result.stdout.lower()
+
+
+def test_version_from_pyproject_toml() -> None:
+    """Test get_version() reads from pyproject.toml when package not installed."""
+    from importlib import metadata as importlib_metadata
+
+    from pwpush import get_version
+
+    with patch.object(
+        importlib_metadata,
+        "version",
+        side_effect=importlib_metadata.PackageNotFoundError,
+    ):
+        version = get_version()
+
+        # Should successfully read version from pyproject.toml
+        assert version != "unknown"
+        assert version.count(".") >= 1  # Basic semver check
+
+
+def test_version_unknown_when_no_package_or_pyproject() -> None:
+    """Test get_version() returns 'unknown' when package not installed and pyproject missing."""
+    from importlib import metadata as importlib_metadata
+
+    from pwpush import get_version
+
+    with (
+        patch.object(
+            importlib_metadata,
+            "version",
+            side_effect=importlib_metadata.PackageNotFoundError,
+        ),
+        patch("pwpush.Path.exists", return_value=False),
+    ):
+        version = get_version()
+
+        assert version == "unknown"

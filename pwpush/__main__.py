@@ -302,7 +302,7 @@ def load_cli_options(
         "-h",
         help="Show this message and exit.",
     ),
-    version: bool = typer.Option(
+    show_version: bool = typer.Option(
         False,
         "--version",
         callback=version_callback,
