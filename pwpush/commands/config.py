@@ -14,7 +14,7 @@ from pwpush.options import (
     user_config,
     user_config_file,
 )
-from pwpush.utils import mask_sensitive_value
+from pwpush.utils import mask_sensitive_value, parse_boolean
 
 app = typer.Typer(
     rich_markup_mode="markdown",
