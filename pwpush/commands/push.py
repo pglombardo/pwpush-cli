@@ -339,7 +339,7 @@ def push_cmd(
             )
 
     # Callback to show rate limit retry feedback
-    def on_rate_limit_retry(attempt: int, delay: float, response) -> None:
+    def on_rate_limit_retry(attempt: int, delay: float, response: Any) -> None:
         if not _json_output():
             rprint(
                 f"[yellow]Rate limit exceeded. Retrying in {delay:.1f}s (attempt {attempt}/3)...[/yellow]"
@@ -514,7 +514,7 @@ def push_file_cmd(
                 )
 
     # Callback to show rate limit retry feedback
-    def on_rate_limit_retry_file(attempt: int, delay: float, response) -> None:
+    def on_rate_limit_retry_file(attempt: int, delay: float, response: Any) -> None:
         if not _json_output():
             rprint(
                 f"[yellow]Rate limit exceeded. Retrying in {delay:.1f}s (attempt {attempt}/3)...[/yellow]"
