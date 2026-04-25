@@ -559,13 +559,13 @@ def push(
     # Handle --prompt-passphrase flag (explicit passphrase prompting)
     if prompt_passphrase:
         # User provided --prompt-passphrase flag, prompt for it
-        first = None
-        second = None
+        first: str | None = None
+        second: str | None = None
         # Rolling out own here as there is no easy way to prompt with a confirmation and at the same time allow it to be omitted
         while True:
             if first is None:
                 first = getpass.getpass(
-                    "Enter passphrase (If the passphrase it empty if will be omitted): "
+                    "Enter passphrase (If the passphrase is empty, it will be omitted): "
                 )
 
             if first in ("c", "C", ""):
@@ -575,9 +575,13 @@ def push(
             if second is None:
                 second = getpass.getpass("Confirm passphrase: ")
 
-            if first is not None and second is not None and first == second:
+            if first == second:
                 passphrase = first
                 break
+            else:
+                rprint("[red]Passphrases do not match. Please try again.[/red]")
+                first = None
+                second = None
     # If passphrase is None (not provided), leave it as None
     # If passphrase has a value (provided with --passphrase value), use that value
 
