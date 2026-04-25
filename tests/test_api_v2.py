@@ -370,6 +370,7 @@ class TestAdaptTextPayloadForProfile:
                 "expire_after_views": 5,
                 "expire_after_days": 7,
                 "note": "test note",
+                "name": "Test Push Name",
                 "deletable_by_viewer": True,
                 "retrieval_step": False,
                 "passphrase": "secret-pass",
@@ -384,6 +385,7 @@ class TestAdaptTextPayloadForProfile:
         assert push["expire_after_views"] == 5
         assert push["expire_after_duration"] == 12  # 7 days maps to duration 12
         assert push["note"] == "test note"
+        assert push["name"] == "Test Push Name"
         assert push["deletable_by_viewer"] is True
         assert push["retrieval_step"] is False
         assert push["passphrase"] == "secret-pass"
@@ -415,12 +417,16 @@ class TestAdaptFilePayloadForProfile:
                 "kind": "file",
                 "expire_after_views": 3,
                 "expire_after_days": 1,
+                "note": "file note",
+                "name": "Test File Name",
             }
         }
         result = adapt_file_payload_for_profile(payload, API_PROFILE_V2)
         assert result["push"]["kind"] == "file"
         assert result["push"]["expire_after_views"] == 3
         assert result["push"]["expire_after_duration"] == 6  # 1 day maps to 6
+        assert result["push"]["note"] == "file note"
+        assert result["push"]["name"] == "Test File Name"
 
 
 class TestAdaptFileUploadsForProfile:
