@@ -85,7 +85,6 @@ def generate_secret(length=50):
     characters = string.ascii_letters + string.digits + string.punctuation
     attempts = 0
     while True:
-        # print(attempts)
         secret = "".join(secrets.choice(characters) for _ in range(length))
         if check_secret_conditions(secret, length=length):
             return secret
@@ -559,29 +558,29 @@ def push(
     # Handle --prompt-passphrase flag (explicit passphrase prompting)
     if prompt_passphrase:
         # User provided --prompt-passphrase flag, prompt for it
-        first: str | None = None
-        second: str | None = None
+        pp_first: str | None = None
+        pp_second: str | None = None
         # Rolling out own here as there is no easy way to prompt with a confirmation and at the same time allow it to be omitted
         while True:
-            if first is None:
-                first = getpass.getpass(
+            if pp_first is None:
+                pp_first = getpass.getpass(
                     "Enter passphrase (If the passphrase is empty, it will be omitted): "
                 )
 
-            if first in ("c", "C", ""):
+            if pp_first in ("c", "C", ""):
                 passphrase = None
                 break
 
-            if second is None:
-                second = getpass.getpass("Confirm passphrase: ")
+            if pp_second is None:
+                pp_second = getpass.getpass("Confirm passphrase: ")
 
-            if first == second:
-                passphrase = first
+            if pp_first == pp_second:
+                passphrase = pp_first
                 break
             else:
                 rprint("[red]Passphrases do not match. Please try again.[/red]")
-                first = None
-                second = None
+                pp_first = None
+                pp_second = None
     # If passphrase is None (not provided), leave it as None
     # If passphrase has a value (provided with --passphrase value), use that value
 

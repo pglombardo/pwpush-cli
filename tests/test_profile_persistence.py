@@ -1,3 +1,5 @@
+"""Tests for API profile caching."""
+
 import time
 from unittest.mock import patch
 

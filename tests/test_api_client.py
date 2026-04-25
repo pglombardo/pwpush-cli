@@ -1,3 +1,5 @@
+"""Tests for API client functionality."""
+
 from pwpush.api.client import build_auth_headers
 
 

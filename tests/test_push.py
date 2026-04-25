@@ -1,3 +1,5 @@
+"""Tests for push commands."""
+
 from unittest.mock import patch
 
 import pytest

@@ -1,3 +1,5 @@
+"""Tests for API capability detection."""
+
 from unittest.mock import MagicMock, patch
 
 from pwpush.api.capabilities import (
