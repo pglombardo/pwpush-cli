@@ -283,25 +283,25 @@ def require_api_token(operation: str) -> None:
 @app.callback(invoke_without_command=True)
 def load_cli_options(
     ctx: typer.Context,
-    json: str = typer.Option(
+    json: bool = typer.Option(
         False,
         "--json",
         "-j",
         help="Output results in JSON format instead of human-readable text.",
     ),
-    verbose: str = typer.Option(
+    verbose: bool = typer.Option(
         False,
         "--verbose",
         "-v",
         help="Enable verbose output with additional details and progress information.",
     ),
-    pretty: str = typer.Option(
+    pretty: bool = typer.Option(
         False,
         "--pretty",
         "-p",
         help="Format JSON output with proper indentation and line breaks.",
     ),
-    debug: str = typer.Option(
+    debug: bool = typer.Option(
         False,
         "--debug",
         "-d",
@@ -322,10 +322,10 @@ def load_cli_options(
     ),
 ) -> None:
     # CLI Args override configuration
-    cli_options["json"] = parse_boolean(json)
-    cli_options["verbose"] = parse_boolean(verbose)
-    cli_options["debug"] = parse_boolean(debug)
-    cli_options["pretty"] = parse_boolean(pretty)
+    cli_options["json"] = json
+    cli_options["verbose"] = verbose
+    cli_options["debug"] = debug
+    cli_options["pretty"] = pretty
 
     # Show welcome screen if no command was provided
     if ctx.invoked_subcommand is None:

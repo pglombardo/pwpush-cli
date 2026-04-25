@@ -68,7 +68,7 @@ def test_file_push(monkeypatch):
 
 
 def test_config_show_in_json():
-    result = runner.invoke(app, ["--json", "on", "config", "show"])
+    result = runner.invoke(app, ["--json", "config", "show"])
     assert '{"instance": {"url":' in result.stdout
     assert result.exit_code == 0
 
