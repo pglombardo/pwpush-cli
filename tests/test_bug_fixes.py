@@ -758,19 +758,28 @@ def test_push_file_without_api_token_fails_before_request() -> None:
 
 def test_expire_uses_v2_endpoint() -> None:
     """Test expire command uses v2 route when profile is v2."""
-    with (
-        patch("pwpush.__main__.current_api_profile", return_value="v2"),
-        patch("pwpush.__main__.make_request") as mock_request,
-    ):
-        success_response = MagicMock()
-        success_response.status_code = 200
-        success_response.json.return_value = {}
-        mock_request.return_value = success_response
+    from pwpush.commands.config import user_config
 
-        result = runner.invoke(app, ["expire", "abc123"])
+    # Set up auth token so we don't fail auth check
+    original_token = user_config["instance"]["token"]
+    user_config["instance"]["token"] = "test-token"
 
-        assert result.exit_code == 0
-        assert mock_request.call_args_list[0].args[1] == "/api/v2/pushes/abc123"
+    try:
+        with (
+            patch("pwpush.__main__.current_api_profile", return_value="v2"),
+            patch("pwpush.__main__.make_request") as mock_request,
+        ):
+            success_response = MagicMock()
+            success_response.status_code = 200
+            success_response.json.return_value = {}
+            mock_request.return_value = success_response
+
+            result = runner.invoke(app, ["expire", "abc123"])
+
+            assert result.exit_code == 0
+            assert mock_request.call_args_list[0].args[1] == "/api/v2/pushes/abc123"
+    finally:
+        user_config["instance"]["token"] = original_token
 
 
 def test_expire_without_token_shows_help() -> None:

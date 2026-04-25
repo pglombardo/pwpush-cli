@@ -2,6 +2,7 @@
 from typing import Any
 
 import getpass
+import json
 import secrets
 import string
 import sys
@@ -262,10 +263,20 @@ def require_api_token(operation: str) -> None:
     """Require a configured API token before authenticated operations."""
     token = user_config["instance"]["token"].strip()
     if not token or token == "Not Set":
-        rprint(
-            f"[red]Error: '{operation}' requires an API token. "
-            "Run 'pwpush login' or set one with 'pwpush config set token <token>'.[/red]"
-        )
+        if json_output():
+            print(
+                json.dumps(
+                    {
+                        "error": f"'{operation}' requires an API token. "
+                        "Run 'pwpush login' or set one with 'pwpush config set token <token>'."
+                    }
+                )
+            )
+        else:
+            rprint(
+                f"[red]Error: '{operation}' requires an API token. "
+                "Run 'pwpush login' or set one with 'pwpush config set token <token>'.[/red]"
+            )
         raise typer.Exit(1)
 
 
@@ -465,7 +476,19 @@ def push(
         "--notify-locale",
         help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
     ),
+    json: bool = typer.Option(
+        False, "--json", "-j", help="Output results in JSON format."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output."
+    ),
+    pretty: bool = typer.Option(
+        False, "--pretty", "-p", help="Pretty-print JSON output."
+    ),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
 ) -> None:
+    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
+
     data: dict[str, dict[str, Any]] = {"password": {}}
     api_profile = current_api_profile()
 
@@ -640,16 +663,28 @@ def push(
 
             body = response.json()
             if json_output():
-                print(body)
+                # Respect --pretty flag
+                dumps_kwargs: dict[str, Any] = {}
+                if pretty_output():
+                    dumps_kwargs["indent"] = 2
+                    dumps_kwargs["sort_keys"] = True
+                print(json.dumps(body, **dumps_kwargs))
             else:
                 rprint(f"The secret has been pushed to:\n{body['url']}")
 
             if auto and passphrase:
                 rprint(f"Passphrase is: {passphrase}")
         else:
-            rprint("Error:")
-            rprint(response.status_code)
-            rprint(response.text)
+            # Safely parse error response
+            error_message = response.text
+            try:
+                error_body = response.json()
+                if isinstance(error_body, dict):
+                    error_message = error_body.get("error", response.text)
+            except (json.JSONDecodeError, ValueError):
+                pass
+            error_json(error_message, response.status_code)
+            raise typer.Exit(1)
 
 
 @app.command(name="push-file")
@@ -680,6 +715,16 @@ def pushFile(
     payload: str = typer.Argument(
         "",
     ),
+    json: bool = typer.Option(
+        False, "--json", "-j", help="Output results in JSON format."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output."
+    ),
+    pretty: bool = typer.Option(
+        False, "--pretty", "-p", help="Pretty-print JSON output."
+    ),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
 ) -> None:
     """
     Push a new file. Requires login with an API token.
@@ -691,6 +736,8 @@ def pushFile(
         pwpush push-file backup.zip --days 7 --views 5  # Custom expiration
         pwpush push-file doc.pdf --notify "admin@example.com"      # Notify on access (Pro)
     """
+    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
+
     require_api_token("push-file")
     api_profile = current_api_profile()
 
@@ -734,9 +781,9 @@ def pushFile(
     if notify or notify_locale:
         token = user_config["instance"]["token"].strip()
         if not token or token == "Not Set":
-            rprint(
-                "[red]Error: Email notifications require authentication. "
-                "Run 'pwpush login' or set a token with 'pwpush config set token <token>'.[/red]"
+            error_json(
+                "Email notifications require authentication. "
+                "Run 'pwpush login' or set a token with 'pwpush config set token <token>'."
             )
             raise typer.Exit(1)
 
@@ -753,10 +800,11 @@ def pushFile(
             if notify_locale:
                 data["file_push"]["notify_emails_to_locale"] = notify_locale
         else:
-            rprint(
-                "[yellow]Warning: Email notifications are not enabled on this instance. "
-                "Options ignored.[/yellow]"
-            )
+            if not json_output():
+                rprint(
+                    "[yellow]Warning: Email notifications are not enabled on this instance. "
+                    "Options ignored.[/yellow]"
+                )
 
     try:
         with open(payload, "rb") as fd:
@@ -771,13 +819,13 @@ def pushFile(
                 post_data=request_data,
             )
     except FileNotFoundError:
-        rprint(f"[red]Error: File '{payload}' not found.[/red]")
+        error_json(f"File '{payload}' not found.")
         raise typer.Exit(1)
     except PermissionError:
-        rprint(f"[red]Error: Permission denied accessing file '{payload}'.[/red]")
+        error_json(f"Permission denied accessing file '{payload}'.")
         raise typer.Exit(1)
     except Exception as e:
-        rprint(f"[red]Error reading file '{payload}': {str(e)}[/red]")
+        error_json(f"Error reading file '{payload}': {str(e)}")
         raise typer.Exit(1)
 
     if response.status_code == 201:
@@ -787,13 +835,61 @@ def pushFile(
 
         body = response.json()
         if json_output():
-            print(body)
+            # Respect --pretty flag
+            dumps_kwargs: dict[str, Any] = {}
+            if pretty_output():
+                dumps_kwargs["indent"] = 2
+                dumps_kwargs["sort_keys"] = True
+            print(json.dumps(body, **dumps_kwargs))
         else:
             rprint(body["url"])
     else:
-        rprint("Error:")
-        rprint(response.status_code)
-        rprint(response.text)
+        # Safely parse error response
+        error_message = response.text
+        try:
+            error_body = response.json()
+            if isinstance(error_body, dict):
+                error_message = error_body.get("error", response.text)
+        except (json.JSONDecodeError, ValueError):
+            pass
+        error_json(error_message, response.status_code)
+        raise typer.Exit(1)
+
+
+def update_cli_options(
+    json: bool = False,
+    verbose: bool = False,
+    pretty: bool = False,
+    debug: bool = False,
+) -> None:
+    """Update global CLI options from command arguments."""
+    if json:
+        cli_options["json"] = json
+    if verbose:
+        cli_options["verbose"] = verbose
+    if debug:
+        cli_options["debug"] = debug
+    if pretty:
+        cli_options["pretty"] = pretty
+
+
+def error_json(message: str, status_code: int | None = None) -> None:
+    """Print error message in JSON format if --json is set, otherwise use rprint."""
+    if json_output():
+        error_obj: dict[str, Any] = {"error": message}
+        if status_code is not None:
+            error_obj["status_code"] = status_code
+        # Respect --pretty flag for JSON error output
+        dumps_kwargs: dict[str, Any] = {}
+        if pretty_output():
+            dumps_kwargs["indent"] = 2
+            dumps_kwargs["sort_keys"] = True
+        print(json.dumps(error_obj, **dumps_kwargs))
+    else:
+        if status_code is not None:
+            rprint(f"[red]Error {status_code}: {message}[/red]")
+        else:
+            rprint(f"[red]Error: {message}[/red]")
 
 
 @app.command()
@@ -802,13 +898,27 @@ def expire(
     url_token: str = typer.Argument(
         "", help="The secret URL token of the push to be expired."
     ),
+    json: bool = typer.Option(
+        False, "--json", "-j", help="Output results in JSON format."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output."
+    ),
+    pretty: bool = typer.Option(
+        False, "--pretty", "-p", help="Pretty-print JSON output."
+    ),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
 ) -> None:
     """
     Expire a push.
     """
+    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
+
     if not url_token:
         typer.echo(ctx.get_help())
         raise typer.Exit()
+
+    require_api_token("expire")
 
     path = push_expire_path(current_api_profile(), url_token)
 
@@ -818,11 +928,23 @@ def expire(
         body = response.json()
 
         if json_output():
-            print(body)
+            # Respect --pretty flag
+            dumps_kwargs: dict[str, Any] = {}
+            if pretty_output():
+                dumps_kwargs["indent"] = 2
+                dumps_kwargs["sort_keys"] = True
+            print(json.dumps(body, **dumps_kwargs))
     else:
-        rprint("Error:")
-        rprint(response.status_code)
-        rprint(response.text)
+        # Safely parse error response
+        error_message = response.text
+        try:
+            error_body = response.json()
+            if isinstance(error_body, dict):
+                error_message = error_body.get("error", response.text)
+        except (json.JSONDecodeError, ValueError):
+            pass
+        error_json(error_message, response.status_code)
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -831,10 +953,22 @@ def audit(
     url_token: str = typer.Argument(
         "", help="The secret URL token of the push to audit."
     ),
+    json: bool = typer.Option(
+        False, "--json", "-j", help="Output results in JSON format."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output."
+    ),
+    pretty: bool = typer.Option(
+        False, "--pretty", "-p", help="Pretty-print JSON output."
+    ),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
 ) -> None:
     """
     Show the audit log for the given push. Requires login with an API token.
     """
+    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
+
     if not url_token:
         typer.echo(ctx.get_help())
         raise typer.Exit()
@@ -842,7 +976,7 @@ def audit(
     require_api_token("audit")
 
     if user_config["instance"]["email"] == "Not Set":
-        rprint("You must log into an instance first.")
+        error_json("You must log into an instance first.")
         raise typer.Exit(1)
 
     path = push_audit_path(current_api_profile(), url_token)
@@ -853,7 +987,12 @@ def audit(
         body = response.json()
 
         if json_output():
-            print(body)
+            # Respect --pretty flag
+            dumps_kwargs: dict[str, Any] = {}
+            if pretty_output():
+                dumps_kwargs["indent"] = 2
+                dumps_kwargs["sort_keys"] = True
+            print(json.dumps(body, **dumps_kwargs))
         else:
             rprint()
             rprint(f"[bold]=== Audit Log for {url_token}:[/bold]")
@@ -875,20 +1014,41 @@ def audit(
 
             console.print(table)
     else:
-        rprint("Error:")
-        rprint(response.status_code)
-        rprint(response.text)
+        # Safely parse error response
+        error_message = response.text
+        try:
+            error_body = response.json()
+            if isinstance(error_body, dict):
+                error_message = error_body.get("error", response.text)
+        except (json.JSONDecodeError, ValueError):
+            pass
+        error_json(error_message, response.status_code)
+        raise typer.Exit(1)
 
 
 @app.command()
-def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) -> None:
+def list(
+    expired: bool = typer.Option(False, help="Show only expired pushes."),
+    json: bool = typer.Option(
+        False, "--json", "-j", help="Output results in JSON format."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output."
+    ),
+    pretty: bool = typer.Option(
+        False, "--pretty", "-p", help="Pretty-print JSON output."
+    ),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
+) -> None:
     """
     List active pushes. Requires login with an API token.
     """
+    update_cli_options(json=json, verbose=verbose, pretty=pretty, debug=debug)
+
     require_api_token("list")
 
     if user_config["instance"]["email"] == "Not Set":
-        rprint("You must log into an instance first.")
+        error_json("You must log into an instance first.")
         raise typer.Exit(1)
 
     paths = validation_paths(current_api_profile(), expired=expired)
@@ -901,15 +1061,19 @@ def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) 
         break
 
     if r is None:
-        rprint("[red]Error: no compatible list endpoint found on this instance.[/red]")
+        error_json("No compatible list endpoint found on this instance.")
         raise typer.Exit(1)
 
     if r.status_code == 200:
+        pushes = r.json()
         if json_output():
-            print(r.json())
+            # Respect --pretty flag
+            dumps_kwargs: dict[str, Any] = {}
+            if pretty_output():
+                dumps_kwargs["indent"] = 2
+                dumps_kwargs["sort_keys"] = True
+            print(json.dumps(pushes, **dumps_kwargs))
         else:
-            pushes = r.json()
-
             rprint()
             if expired:
                 rprint("[bold]=== Expired Pushes:[/bold]")
@@ -943,8 +1107,16 @@ def list(expired: bool = typer.Option(False, help="Show only expired pushes.")) 
 
             console.print(table)
     else:
-        rprint("Error:")
-        rprint(r.text)
+        # Safely parse error response
+        error_message = r.text
+        try:
+            error_body = r.json()
+            if isinstance(error_body, dict):
+                error_message = error_body.get("error", r.text)
+        except (json.JSONDecodeError, ValueError):
+            pass
+        error_json(error_message, r.status_code)
+        raise typer.Exit(1)
 
 
 def make_request(
