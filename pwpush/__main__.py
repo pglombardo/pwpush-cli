@@ -18,6 +18,8 @@ from pwpush.commands.config import save_config, user_config
 from pwpush.commands.manage import audit_cmd, expire_cmd, list_cmd
 from pwpush.commands.push import HELP_TEXT as PUSH_HELP_TEXT
 from pwpush.commands.push import push_cmd, push_file_cmd
+from pwpush.commands.request import HELP_TEXT as REQUEST_HELP_TEXT
+from pwpush.commands.request import request_cmd
 from pwpush.options import cli_options, config_file_exists
 from pwpush.utils import parse_boolean
 
@@ -61,6 +63,9 @@ def show_welcome_screen() -> None:
         "  [cyan]pwpush push --auto[/cyan]             # Auto-generate password"
     )
     console.print("  [cyan]pwpush push-file document.pdf[/cyan]  # Upload a file")
+    console.print(
+        '  [cyan]pwpush request "Send me the API key" --notify user@example.com[/cyan]  # Request a secret (Pro)'
+    )
     console.print(
         "  [cyan]pwpush login[/cyan]                   # Login for advanced features"
     )
@@ -130,6 +135,9 @@ def show_help_with_config() -> None:
     )
     console.print("  [cyan]push[/cyan]        Push a new password, secret note or text")
     console.print("  [cyan]push-file[/cyan]   Push a new file")
+    console.print(
+        "  [cyan]request[/cyan]     Create a request for someone to send you a secret (Pro)"
+    )
     console.print("  [cyan]expire[/cyan]      Expire a push")
     console.print("  [cyan]audit[/cyan]       Show the audit log for the given push")
     console.print("  [cyan]list[/cyan]        List active pushes (if logged in)")
@@ -621,6 +629,74 @@ def list(
     """List active pushes. Requires login with an API token."""
     list_cmd(
         expired=expired,
+        json=json,
+        verbose=verbose,
+        pretty=pretty,
+        debug=debug,
+    )
+
+
+@app.command(help=REQUEST_HELP_TEXT)
+def request(
+    ctx: typer.Context,
+    text: str = typer.Argument(
+        "", help="Request text/content describing what you need."
+    ),
+    content: str | None = typer.Option(
+        None,
+        "--content",
+        help="Read request content from file instead of positional text.",
+    ),
+    attach_file: str | None = typer.Option(
+        None, "--attach-file", help="Attach a file to the request."
+    ),
+    notify: str | None = typer.Option(
+        None,
+        "--notify",
+        help="Email address to notify when this request is fulfilled. Required for requests.",
+    ),
+    notify_locale: str | None = typer.Option(
+        None,
+        "--notify-locale",
+        help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
+    ),
+    days: int | None = typer.Option(None, help="Expire after this many days."),
+    views: int | None = typer.Option(None, help="Expire after this many views."),
+    deletable: bool | None = typer.Option(
+        None, help="Allow users to delete the request once fulfilled."
+    ),
+    retrieval_step: bool | None = typer.Option(
+        None,
+        help="1-click retrieval step: Helps to avoid chat systems and URL scanners from eating up views.",
+    ),
+    note: str | None = typer.Option(
+        None,
+        help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..",
+    ),
+    json: bool = typer.Option(
+        False, "--json", "-j", help="Output results in JSON format."
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output."
+    ),
+    pretty: bool = typer.Option(
+        False, "--pretty", "-p", help="Pretty-print JSON output."
+    ),
+    debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug mode."),
+) -> None:
+    """Create a request for someone to send you a secret. Requires authentication and a Pro instance."""
+    request_cmd(
+        ctx=ctx,
+        text=text,
+        content=content,
+        attach_file=attach_file,
+        notify=notify,
+        notify_locale=notify_locale,
+        days=days,
+        views=views,
+        deletable=deletable,
+        retrieval_step=retrieval_step,
+        note=note,
         json=json,
         verbose=verbose,
         pretty=pretty,

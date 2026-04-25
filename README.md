@@ -10,7 +10,7 @@
 
 **The elegant way to share secrets from the command line.**
 <br>
-Self-destructing links for passwords, files, and sensitive data.
+Self-destructing links for passwords, files, requests, and sensitive data.
 
 [Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [Documentation](https://docs.pwpush.com)
 
@@ -93,6 +93,23 @@ $ pwpush push-file secret-document.pdf --days 7
 https://pwpush.com/f/file456token
 ```
 
+### 4. Request Secrets (Pro)
+
+Ask others to send you secrets securely with the request command. Perfect for when you need someone to send you credentials, files, or any sensitive data:
+
+```bash
+$ pwpush request "Please send me the production API key" --notify "devops@company.com"
+Request created successfully:
+https://pwpush.com/r/abc123xyz
+
+# With a file attachment
+$ pwpush request "Send me the signed NDA" --attach-file ./nda-template.pdf --notify "legal@partner.com"
+Request created successfully:
+https://pwpush.com/r/def456uvw
+```
+
+> **Note:** Requests require authentication with a Password Pusher Pro/Enterprise instance (API v2.1+).
+
 ---
 
 ## Why pwpush?
@@ -100,6 +117,7 @@ https://pwpush.com/f/file456token
 ### 🔐 Security First
 - Zero permanent storage — data is encrypted and auto-deleted
 - Full audit trails — see exactly who accessed what and when
+- **Requests** — ask others to send you secrets securely (Pro)
 - Prevent URL scanners with `--retrieval-step`
 
 ### ✨ Developer Experience
@@ -128,6 +146,12 @@ pwpush push --secret "https://staging.example.com" --kind url
 # Push with a reference note (for your records)
 pwpush push --secret "password" --note "AWS Root - Production"
 
+# Request a secret from someone (Pro feature)
+pwpush request "Send me the production API key" --notify "devops@company.com"
+
+# Request with file attachment (Pro feature)
+pwpush request "Send me the signed contract" --attach-file ./template.pdf --notify "vendor@example.com"
+
 # List your active pushes
 pwpush list
 
@@ -151,8 +175,19 @@ pwpush push --secret "password" --notify "admin@company.com"
 # Multi-language notifications
 pwpush push --secret "password" --notify "admin@company.com" --notify-locale "es"
 
+# Create a request for someone to send you a secret (requires API v2.1+ commercial edition)
+pwpush request "Send me the production database password" --notify "colleague@example.com"
+
+# Request with content from a file
+pwpush request --content ./instructions.txt --notify "team@example.com"
+
+# Request with file attachment
+pwpush request "Send me the signed contract" --attach-file ./template.pdf --notify "vendor@example.com"
+
 # Multiple accounts per API token (automatically detected)
 ```
+
+> **Note:** The `request` command requires authentication with a Password Pusher Pro or Enterprise instance running API v2.1 or greater.
 
 ---
 

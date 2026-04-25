@@ -167,3 +167,49 @@ def accounts_enabled(capabilities: dict[str, Any] | None = None) -> bool:
     features = capabilities.get("features", {})
     accounts = features.get("accounts", {})
     return bool(accounts.get("enabled", False))
+
+
+def requests_enabled(capabilities: dict[str, Any] | None = None) -> bool:
+    """Check if requests API is supported.
+
+    Returns True when:
+    - API version >= 2.0
+    - features.requests == true (for 2.1+)
+    - Commercial edition (Pro) instance
+
+    Args:
+        capabilities: Dict returned by detect_api_capabilities()
+
+    Returns:
+        bool: True if requests API is enabled on this instance
+    """
+    if not capabilities:
+        return False
+
+    version = capabilities.get("api_version")
+    if not version:
+        return False
+
+    # Parse version string - handle cases like "2.0.0" or "2.1"
+    try:
+        version_parts = version.split(".")
+        major = int(version_parts[0]) if len(version_parts) > 0 else 0
+        minor = int(version_parts[1]) if len(version_parts) > 1 else 0
+
+        # Requests API requires API version 2.0 or greater
+        if major < 2:
+            return False
+    except (ValueError, IndexError):
+        return False
+
+    # For API 2.1+, check the features hash
+    if major == 2 and minor >= 1:
+        features = capabilities.get("features", {})
+        # Requests requires both commercial edition and requests feature enabled
+        is_commercial = bool(features.get("commercial", False))
+        requests_available = bool(features.get("requests", False))
+        return is_commercial and requests_available
+
+    # For API 2.0 (without features hash), cannot verify commercial edition
+    # Return False to be safe (commercial edition will have 2.1+ with features hash)
+    return False
