@@ -283,6 +283,7 @@ def require_api_token(operation: str) -> None:
 @app.callback(invoke_without_command=True)
 def load_cli_options(
     ctx: typer.Context,
+    # Note: typed as str (not bool) to support both flag style (--json) and value style (--json on)
     json: str = typer.Option(
         False,
         "--json",
