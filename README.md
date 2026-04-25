@@ -110,7 +110,7 @@ https://pwpush.com/f/file456token
 ### 🌍 Multi-Instance Support
 Works with hosted services or your own instance:
 - `eu.pwpush.com` — EU-hosted Pro
-- `us.pwpush.com` — US-hosted Pro  
+- `us.pwpush.com` — US-hosted Pro
 - `oss.pwpush.com` — Free OSS tier
 - Self-hosted — Your own domain
 
@@ -142,7 +142,7 @@ pwpush expire <url_token>
 
 ## Pro Features
 
-For [Password Pusher Pro](https://pwpush.com) users with authenticated access:
+For [Password Pusher Pro](https://us.pwpush.com/features) users with authenticated access:
 
 ```bash
 # Email notifications when push is accessed
@@ -184,7 +184,7 @@ pwpush config delete
 ```bash
 # Perfect for automation
 $ pwpush --json push --secret "password"
-{"url":"https://pwpush.com/p/abc123","url_token":"abc123","expire_after_days":7}
+{"url":"https://eu.pwpush.com/p/abc123","url_token":"abc123","expire_after_days":7}
 
 # Chain with other tools
 $ pwpush --json push --auto | jq -r '.url' | pbcopy
@@ -240,7 +240,7 @@ Works with:
 | Resource | Link |
 |----------|------|
 | 📖 Full Documentation | [docs.pwpush.com](https://docs.pwpush.com) |
-| 🌐 Password Pusher | [pwpush.com](https://pwpush.com) |
+| 🌐 Password Pusher | [pwpush.com](https://us.pwpush.com) |
 | 💻 Open Source Project | [github.com/pglombardo/PasswordPusher](https://github.com/pglombardo/PasswordPusher) |
 | 🐛 Issue Tracker | [github.com/pglombardo/pwpush-cli/issues](https://github.com/pglombardo/pwpush-cli/issues) |
 
@@ -251,5 +251,5 @@ Works with:
 Built by [Apnotic](https://apnotic.com) — empowering secure information distribution.
 
 - Homepage: [apnotic.com](https://apnotic.com)
-- SaaS: [pwpush.com](https://pwpush.com)
+- SaaS: [pwpush.com](https://us.pwpush.com)
 - License: MIT

@@ -56,7 +56,7 @@ def login_cmd(
     Login to the registered Password Pusher instance.
 
     Your email and API token is required for authenticated operations.
-    Your API token is available at https://pwpush.com/en/users/token.
+    Your API token is available at https://us.pwpush.com/en/users/token.
 
     After login, you can use commands like 'list', 'audit', and 'expire'.
     """
