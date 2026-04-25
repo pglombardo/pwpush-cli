@@ -189,3 +189,70 @@ def normalize_audit_events(body: dict[str, Any]) -> list[dict[str, str]]:
             }
         )
     return rows
+
+
+# Request API endpoints
+
+
+def request_create_path(api_profile: str) -> str:
+    """Return create endpoint for requests."""
+    if api_profile == API_PROFILE_V2:
+        return "/api/v2/requests"
+    # Legacy API does not support requests
+    return "/r.json"
+
+
+def request_preview_path(api_profile: str, url_token: str) -> str:
+    """Return preview endpoint for created request."""
+    if api_profile == API_PROFILE_V2:
+        return f"/api/v2/requests/{url_token}/preview"
+    # Legacy API does not support requests
+    return f"/r/{url_token}/preview.json"
+
+
+def adapt_request_payload_for_profile(
+    payload: dict[str, Any], api_profile: str
+) -> dict[str, Any]:
+    """Convert request payload between legacy and v2 formats."""
+    if api_profile == API_PROFILE_LEGACY:
+        return payload
+
+    source = payload["request"]
+    request_payload: dict[str, Any] = {
+        "request": source["request"],
+    }
+    if "notify_emails_to" in source:
+        request_payload["notify_emails_to"] = source["notify_emails_to"]
+    if "notify_emails_to_locale" in source:
+        request_payload["notify_emails_to_locale"] = source["notify_emails_to_locale"]
+    if "expire_after_views" in source:
+        request_payload["expire_after_views"] = source["expire_after_views"]
+    if "note" in source:
+        request_payload["note"] = source["note"]
+    if "name" in source:
+        request_payload["name"] = source["name"]
+    if "deletable_by_viewer" in source:
+        request_payload["deletable_by_viewer"] = source["deletable_by_viewer"]
+    if "retrieval_step" in source:
+        request_payload["retrieval_step"] = source["retrieval_step"]
+
+    if "expire_after_days" in source:
+        days = int(source["expire_after_days"])
+        if days in _DURATION_BY_DAYS:
+            request_payload["expire_after_duration"] = _DURATION_BY_DAYS[days]
+        else:
+            # Keep backward value for instances that still accept day-style field
+            request_payload["expire_after_days"] = days
+
+    return {"request": request_payload}
+
+
+def adapt_request_uploads_for_profile(
+    upload_files: dict[str, Any], api_profile: str
+) -> dict[str, Any]:
+    """Rename multipart file key for v2 when required."""
+    if api_profile == API_PROFILE_LEGACY:
+        return upload_files
+    if "request[files][]" in upload_files:
+        return {"request[files][]": upload_files["request[files][]"]}
+    return upload_files

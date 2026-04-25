@@ -1,0 +1,214 @@
+# Common Pitfalls and Debugging
+
+description: Common issues and how to avoid them when working on pwpush-cli
+glob: "**/*.py"
+
+## Import Patterns
+
+### Avoid Circular Imports
+
+**Don't import directly from `__main__` at module level:**
+```python
+# BAD - causes circular import
+from pwpush.__main__ import make_request, require_api_token
+
+# GOOD - import inside functions
+from pwpush.__main__ import make_request
+```
+
+**Correct pattern in command modules:**
+```python
+def _make_request(...):
+    from pwpush.__main__ import make_request
+    return make_request(...)
+```
+
+### Config Import
+
+**Always import from `options` or `commands.config`:**
+```python
+# Good
+from pwpush.options import user_config, cli_options
+from pwpush.commands.config import user_config
+```
+
+## Boolean Parsing
+
+Config values are stored as strings. Use `parse_boolean()`:
+
+```python
+# BAD - direct comparison
+if user_config["cli"]["json"]:
+    # Always true for non-empty string "False"!
+
+# GOOD - use parse_boolean
+from pwpush.utils import parse_boolean
+if parse_boolean(user_config["cli"]["json"]):
+    # Correctly handles "True", "true", "yes", "1", etc.
+```
+
+## API Profile Detection
+
+**Don't hardcode API profile checks:**
+```python
+# BAD
+if api_profile == "v2":  # might break if profile name changes
+
+# GOOD
+from pwpush.api.capabilities import API_PROFILE_V2
+if api_profile == API_PROFILE_V2:
+```
+
+## Error Output
+
+**Always use `_error_json()` for errors:**
+```python
+# BAD - manual error output
+if json_mode:
+    print(json.dumps({"error": "message"}))
+else:
+    rprint("[red]Error: message[/red]")
+raise typer.Exit(1)
+
+# GOOD - unified error handling
+_error_json("message", status_code=400)
+raise typer.Exit(1)
+```
+
+## Pro Feature Checks
+
+**Always check both commercial and feature flags:**
+```python
+# BAD - only checks feature
+if features.get("requests"):
+
+# GOOD - checks both commercial and feature
+is_commercial = bool(features.get("commercial", False))
+requests_available = bool(features.get("requests", False))
+return is_commercial and requests_available
+```
+
+## File Handling
+
+**Always handle file cleanup in finally blocks:**
+```python
+# BAD - file handle might not be closed
+upload_files = {"file": open(path, "rb")}
+response = _make_request(..., upload_files=upload_files)
+
+# GOOD - proper cleanup
+upload_files = None
+try:
+    upload_files = {"file": open(path, "rb")}
+    response = _make_request(..., upload_files=upload_files)
+finally:
+    if upload_files:
+        try:
+            upload_files["file"].close()
+        except Exception:
+            pass
+```
+
+## Testing Gotchas
+
+### Mocking `detect_api_capabilities`
+
+**Must mock in the correct module:**
+```python
+# BAD - mocks in wrong location
+patch("pwpush.api.capabilities.detect_api_capabilities")
+
+# GOOD - mocks where it's used
+patch("pwpush.commands.feature.detect_api_capabilities")
+```
+
+### CLI Runner Input
+
+**Use `input` param for stdin, not `args`:**
+```python
+# BAD
+runner.invoke(app, ["push", "secret"])
+
+# GOOD - simulates piped input
+runner.invoke(app, ["push"], input="secret\n")
+```
+
+### Isolating Config
+
+**Tests must not share config state:**
+```python
+# conftest.py handles this automatically with isolate_config_file fixture
+# Always use this pattern in conftest.py
+```
+
+## Debugging Tips
+
+### Enable Debug Mode
+
+```bash
+pwpush --debug <command>
+```
+
+Shows HTTP requests/responses with headers.
+
+### Check API Profile
+
+```python
+# In code
+from pwpush.__main__ import current_api_profile
+print(f"API Profile: {current_api_profile()}")
+```
+
+### Check Capabilities
+
+```python
+# In code
+from pwpush.api.capabilities import detect_api_capabilities
+caps = detect_api_capabilities(
+    base_url=user_config["instance"]["url"],
+    email=user_config["instance"]["email"],
+    token=user_config["instance"]["token"],
+    debug=True,
+)
+print(f"Capabilities: {caps}")
+```
+
+### Test Isolation Issues
+
+If tests fail unexpectedly:
+1. Check if `isolate_config_file` fixture is in `conftest.py`
+2. Verify mocks are patching the correct module path
+3. Clear pytest cache: `rm -rf .pytest_cache`
+
+## Common Error Messages
+
+### "'command' requires an API token"
+- Set token: `pwpush login` or `pwpush config set token <token>`
+- In tests: `user_config["instance"]["token"] = "valid-token"`
+
+### "Feature not available on this instance"
+- Check API version: `detect_api_capabilities()`
+- Verify commercial edition: `features.commercial`
+- Verify feature flag: `features.feature_name`
+
+### "Circular import"
+- Move imports inside functions
+- Use private helper wrappers for `__main__` imports
+
+### "No such file or directory" in tests
+- Use `tmp_path` fixture for file operations
+- Files created in temp directory are auto-cleaned
+
+## Type Checking
+
+**Always use type hints:**
+```python
+def function(param: str | None) -> dict[str, Any]:
+    ...
+```
+
+**Handle mypy errors:**
+```python
+# If mypy complains about untyped dict
+data: dict[str, Any] = {"key": value}
+```

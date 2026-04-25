@@ -63,6 +63,7 @@ def detect_api_capabilities(
 
     Returns a dict with:
     - api_version: str | None (e.g., "2.1.0")
+    - edition: str | None (e.g., "commercial", "oss")
     - features: dict[str, bool] (feature flags from the features section)
 
     The result is cached per base_url to avoid repeated API calls.
@@ -76,13 +77,14 @@ def detect_api_capabilities(
     if token.strip() and token != "Not Set":
         headers = {"Authorization": f"Bearer {token}"}
 
-    result: dict[str, Any] = {"api_version": None, "features": {}}
+    result: dict[str, Any] = {"api_version": None, "edition": None, "features": {}}
 
     try:
         response = requests.get(probe_url, headers=headers, timeout=5)
         if response.status_code == 200:
             data = response.json()
             result["api_version"] = data.get("api_version")
+            result["edition"] = data.get("edition")
             result["features"] = data.get("features", {})
             if debug:
                 rprint(f"[dim][debug] API capabilities detected: {result}[/dim]")
@@ -103,7 +105,7 @@ def email_notifications_enabled(capabilities: dict[str, Any] | None = None) -> b
 
     Returns True only when:
     - API version >= 2.1
-    - features.email_auto_dispatch == true
+    - features.pushes.email_auto_dispatch == true
 
     Args:
         capabilities: Dict returned by detect_api_capabilities()
@@ -130,7 +132,46 @@ def email_notifications_enabled(capabilities: dict[str, Any] | None = None) -> b
         return False
 
     features = capabilities.get("features", {})
-    return bool(features.get("email_auto_dispatch", False))
+    pushes = features.get("pushes", {})
+    return bool(pushes.get("email_auto_dispatch", False))
+
+
+def request_email_notifications_enabled(
+    capabilities: dict[str, Any] | None = None,
+) -> bool:
+    """Check if email notifications are supported for requests.
+
+    Returns True only when:
+    - API version >= 2.1
+    - features.requests.email_auto_dispatch == true
+
+    Args:
+        capabilities: Dict returned by detect_api_capabilities()
+
+    Returns:
+        bool: True if request email notifications are enabled on this instance
+    """
+    if not capabilities:
+        return False
+
+    version = capabilities.get("api_version")
+    if not version:
+        return False
+
+    # Parse version string - handle cases like "2.1.0" or "2.1"
+    try:
+        version_parts = version.split(".")
+        major = int(version_parts[0]) if len(version_parts) > 0 else 0
+        minor = int(version_parts[1]) if len(version_parts) > 1 else 0
+
+        if major < 2 or (major == 2 and minor < 1):
+            return False
+    except (ValueError, IndexError):
+        return False
+
+    features = capabilities.get("features", {})
+    request_features = features.get("requests", {})
+    return bool(request_features.get("email_auto_dispatch", False))
 
 
 def accounts_enabled(capabilities: dict[str, Any] | None = None) -> bool:
@@ -167,3 +208,58 @@ def accounts_enabled(capabilities: dict[str, Any] | None = None) -> bool:
     features = capabilities.get("features", {})
     accounts = features.get("accounts", {})
     return bool(accounts.get("enabled", False))
+
+
+def requests_enabled(capabilities: dict[str, Any] | None = None) -> bool:
+    """Check if requests API is supported.
+
+    Returns True when:
+    - API version >= 2.0
+    - features.requests.enabled == true (for 2.1+)
+    - edition is "commercial" (Pro) instance
+
+    Args:
+        capabilities: Dict returned by detect_api_capabilities()
+
+    Returns:
+        bool: True if requests API is enabled on this instance
+    """
+    if not capabilities:
+        return False
+
+    version = capabilities.get("api_version")
+    if not version:
+        return False
+
+    # Parse version string - handle cases like "2.0.0" or "2.1"
+    try:
+        version_parts = version.split(".")
+        major = int(version_parts[0]) if len(version_parts) > 0 else 0
+        minor = int(version_parts[1]) if len(version_parts) > 1 else 0
+
+        # Requests API requires API version 2.0 or greater
+        if major < 2:
+            return False
+    except (ValueError, IndexError):
+        return False
+
+    # For API 2.1+, check the features hash and edition
+    if major == 2 and minor >= 1:
+        # Check edition at root level ("commercial" for Pro)
+        edition = capabilities.get("edition", "")
+        is_commercial = edition == "commercial"
+
+        # Check requests feature - it's a nested object with "enabled" key
+        features = capabilities.get("features", {})
+        requests_feature = features.get("requests", {})
+        if isinstance(requests_feature, dict):
+            requests_available = bool(requests_feature.get("enabled", False))
+        else:
+            # Fallback for boolean format if API changes
+            requests_available = bool(requests_feature)
+
+        return is_commercial and requests_available
+
+    # For API 2.0 (without features hash), cannot verify commercial edition
+    # Return False to be safe (commercial edition will have 2.1+ with features hash)
+    return False
