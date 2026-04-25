@@ -7,13 +7,14 @@ from rich.table import Table
 
 from pwpush.config_wizard import run_config_wizard
 from pwpush.options import (
+    cli_options,
     default_config,
     json_output,
     save_config,
     user_config,
     user_config_file,
 )
-from pwpush.utils import mask_sensitive_value
+from pwpush.utils import mask_sensitive_value, parse_boolean
 
 app = typer.Typer(
     rich_markup_mode="markdown",
@@ -25,14 +26,51 @@ console = Console()
 
 
 @app.callback(invoke_without_command=True)
-def config_commands(ctx: typer.Context) -> None:
+def config_commands(
+    ctx: typer.Context,
+    json: bool = typer.Option(
+        False,
+        "--json",
+        "-j",
+        help="Output results in JSON format instead of human-readable text.",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Enable verbose output with additional details and progress information.",
+    ),
+    pretty: bool = typer.Option(
+        False,
+        "--pretty",
+        "-p",
+        help="Format JSON output with proper indentation and line breaks.",
+    ),
+    debug: bool = typer.Option(
+        False,
+        "--debug",
+        "-d",
+        help="Enable debug mode with detailed request/response information.",
+    ),
+) -> None:
     """
     Show configuration when no subcommand is provided.
 
     Run `pwpush config wizard` for guided setup.
     """
+    # Only update global CLI options if explicitly set via subcommand
+    # This preserves global options set on the parent app (e.g., pwpush --json config)
+    if json:
+        cli_options["json"] = json
+    if verbose:
+        cli_options["verbose"] = verbose
+    if debug:
+        cli_options["debug"] = debug
+    if pretty:
+        cli_options["pretty"] = pretty
+
     if ctx.invoked_subcommand is None:
-        show()
+        _show_config(use_json=json or cli_options.get("json", False))
 
 
 @app.command()
@@ -68,10 +106,15 @@ def show(
     """
     Show current configuration values.
     """
-    # Check both the local flag and the global CLI options
-    from pwpush.options import cli_options
+    _show_config(json_output_flag)
 
-    if json_output_flag or json_output() or cli_options.get("json", False):
+
+def _show_config(use_json: bool = False) -> None:
+    """
+    Internal function to show configuration values.
+    """
+    # Check both the provided flag and the global CLI options
+    if use_json or json_output() or cli_options.get("json", False):
         # Create a copy of the config sections and mask sensitive values
         config_data = {}
         for section_name in user_config.sections():
