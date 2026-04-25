@@ -63,6 +63,7 @@ def detect_api_capabilities(
 
     Returns a dict with:
     - api_version: str | None (e.g., "2.1.0")
+    - edition: str | None (e.g., "commercial", "oss")
     - features: dict[str, bool] (feature flags from the features section)
 
     The result is cached per base_url to avoid repeated API calls.
@@ -76,13 +77,14 @@ def detect_api_capabilities(
     if token.strip() and token != "Not Set":
         headers = {"Authorization": f"Bearer {token}"}
 
-    result: dict[str, Any] = {"api_version": None, "features": {}}
+    result: dict[str, Any] = {"api_version": None, "edition": None, "features": {}}
 
     try:
         response = requests.get(probe_url, headers=headers, timeout=5)
         if response.status_code == 200:
             data = response.json()
             result["api_version"] = data.get("api_version")
+            result["edition"] = data.get("edition")
             result["features"] = data.get("features", {})
             if debug:
                 rprint(f"[dim][debug] API capabilities detected: {result}[/dim]")
@@ -174,8 +176,8 @@ def requests_enabled(capabilities: dict[str, Any] | None = None) -> bool:
 
     Returns True when:
     - API version >= 2.0
-    - features.requests == true (for 2.1+)
-    - Commercial edition (Pro) instance
+    - features.requests.enabled == true (for 2.1+)
+    - edition is "commercial" (Pro) instance
 
     Args:
         capabilities: Dict returned by detect_api_capabilities()
@@ -202,12 +204,21 @@ def requests_enabled(capabilities: dict[str, Any] | None = None) -> bool:
     except (ValueError, IndexError):
         return False
 
-    # For API 2.1+, check the features hash
+    # For API 2.1+, check the features hash and edition
     if major == 2 and minor >= 1:
+        # Check edition at root level ("commercial" for Pro)
+        edition = capabilities.get("edition", "")
+        is_commercial = edition == "commercial"
+
+        # Check requests feature - it's a nested object with "enabled" key
         features = capabilities.get("features", {})
-        # Requests requires both commercial edition and requests feature enabled
-        is_commercial = bool(features.get("commercial", False))
-        requests_available = bool(features.get("requests", False))
+        requests_feature = features.get("requests", {})
+        if isinstance(requests_feature, dict):
+            requests_available = bool(requests_feature.get("enabled", False))
+        else:
+            # Fallback for boolean format if API changes
+            requests_available = bool(requests_feature)
+
         return is_commercial and requests_available
 
     # For API 2.0 (without features hash), cannot verify commercial edition

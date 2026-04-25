@@ -221,8 +221,10 @@ def adapt_request_payload_for_profile(
     request_payload: dict[str, Any] = {
         "payload": source["payload"],
     }
-    if "email" in source:
-        request_payload["email"] = source["email"]
+    if "notify_emails_to" in source:
+        request_payload["notify_emails_to"] = source["notify_emails_to"]
+    if "notify_emails_to_locale" in source:
+        request_payload["notify_emails_to_locale"] = source["notify_emails_to_locale"]
     if "expire_after_views" in source:
         request_payload["expire_after_views"] = source["expire_after_views"]
     if "note" in source:

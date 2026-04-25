@@ -17,9 +17,15 @@ runner = CliRunner()
 @pytest.fixture
 def mock_request_enabled():
     """Mock requests_enabled to return True."""
-    with patch(
-        "pwpush.commands.request.requests_enabled",
-        return_value=True,
+    with (
+        patch(
+            "pwpush.commands.request.requests_enabled",
+            return_value=True,
+        ),
+        patch(
+            "pwpush.commands.request.email_notifications_enabled",
+            return_value=True,
+        ),
     ):
         yield
 
@@ -44,7 +50,8 @@ def mock_request_make_request():
             "pwpush.commands.request.detect_api_capabilities",
             return_value={
                 "api_version": "2.1.0",
-                "features": {"commercial": True, "requests": True},
+                "edition": "commercial",
+                "features": {"requests": {"enabled": True}},
             },
         ),
     ):
@@ -142,7 +149,7 @@ def test_request_with_positional_text(mock_request_make_request, mock_request_en
         post_data["request"]["payload"]
         == "Please send me the production database password"
     )
-    assert post_data["request"]["email"] == "admin@example.com"
+    assert post_data["request"]["notify_emails_to"] == "admin@example.com"
 
 
 def test_request_with_content_file(
@@ -168,7 +175,7 @@ def test_request_with_content_file(
     assert post_call is not None
     post_data = _get_request_data_from_call(post_call)
     assert post_data["request"]["payload"] == "This is the request content from file"
-    assert post_data["request"]["email"] == "team@example.com"
+    assert post_data["request"]["notify_emails_to"] == "team@example.com"
 
 
 def test_request_with_both_text_and_content_error(
@@ -261,7 +268,7 @@ def test_request_with_content_file_and_attach_file(
     assert post_call is not None
     post_data = _get_request_data_from_call(post_call)
     assert post_data["request"]["payload"] == "Please fill out this form"
-    assert post_data["request"]["email"] == "hr@example.com"
+    assert post_data["request"]["notify_emails_to"] == "hr@example.com"
     args, kwargs = post_call
     assert kwargs.get("upload_files") is not None
 
@@ -482,41 +489,50 @@ def test_requests_enabled_helper():
     """Test the requests_enabled helper function."""
     from pwpush.api.capabilities import requests_enabled
 
-    # Enabled - API 2.1 with commercial and requests feature flag
+    # Enabled - API 2.1 with commercial edition and requests enabled
     assert requests_enabled(
         {
             "api_version": "2.1.0",
-            "features": {"commercial": True, "requests": True},
+            "edition": "commercial",
+            "features": {"requests": {"enabled": True}},
         }
     )
 
-    # Enabled - API 2.2+ with commercial and requests feature flag
+    # Enabled - API 2.2+ with commercial edition and requests enabled
     assert requests_enabled(
         {
             "api_version": "2.5.0",
-            "features": {"commercial": True, "requests": True},
+            "edition": "commercial",
+            "features": {"requests": {"enabled": True}},
         }
     )
 
-    # Disabled - requests feature flag false
+    # Disabled - requests disabled
     assert not requests_enabled(
         {
             "api_version": "2.1.0",
-            "features": {"commercial": True, "requests": False},
+            "edition": "commercial",
+            "features": {"requests": {"enabled": False}},
         }
     )
 
-    # Disabled - missing requests feature flag on 2.1+
+    # Disabled - missing requests feature on 2.1+
     assert not requests_enabled(
-        {"api_version": "2.1.0", "features": {"commercial": True}}
+        {"api_version": "2.1.0", "edition": "commercial", "features": {}}
     )
 
     # Disabled - not commercial edition
     assert not requests_enabled(
         {
             "api_version": "2.1.0",
-            "features": {"commercial": False, "requests": True},
+            "edition": "oss",
+            "features": {"requests": {"enabled": True}},
         }
+    )
+
+    # Disabled - missing edition field
+    assert not requests_enabled(
+        {"api_version": "2.1.0", "features": {"requests": {"enabled": True}}}
     )
 
     # Disabled - API 2.0 (cannot verify commercial edition without features hash)
@@ -526,7 +542,8 @@ def test_requests_enabled_helper():
     assert not requests_enabled(
         {
             "api_version": "1.0.0",
-            "features": {"commercial": True, "requests": True},
+            "edition": "commercial",
+            "features": {"requests": {"enabled": True}},
         }
     )
 
@@ -540,6 +557,16 @@ def test_requests_enabled_helper():
     assert not requests_enabled(
         {
             "api_version": "invalid",
-            "features": {"commercial": True, "requests": True},
+            "edition": "commercial",
+            "features": {"requests": {"enabled": True}},
+        }
+    )
+
+    # Enabled - boolean fallback format for backward compatibility
+    assert requests_enabled(
+        {
+            "api_version": "2.1.0",
+            "edition": "commercial",
+            "features": {"requests": True},
         }
     )

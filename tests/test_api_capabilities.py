@@ -93,10 +93,11 @@ def test_detect_api_profile_uses_bearer_token_without_email() -> None:
 
 
 def test_requests_enabled_with_api_2_1_and_feature_true() -> None:
-    """Test requests_enabled returns True for API 2.1 with commercial and requests enabled."""
+    """Test requests_enabled returns True for API 2.1 with commercial edition and requests enabled."""
     capabilities: dict[str, Any] = {
         "api_version": "2.1.0",
-        "features": {"commercial": True, "requests": True},
+        "edition": "commercial",
+        "features": {"requests": {"enabled": True}},
     }
     assert requests_enabled(capabilities) is True
 
@@ -105,16 +106,18 @@ def test_requests_enabled_with_api_2_1_and_feature_false() -> None:
     """Test requests_enabled returns False for API 2.1 with requests disabled."""
     capabilities: dict[str, Any] = {
         "api_version": "2.1.0",
-        "features": {"commercial": True, "requests": False},
+        "edition": "commercial",
+        "features": {"requests": {"enabled": False}},
     }
     assert requests_enabled(capabilities) is False
 
 
 def test_requests_enabled_with_api_2_1_no_feature_flag() -> None:
-    """Test requests_enabled returns False for API 2.1 without requests feature flag."""
+    """Test requests_enabled returns False for API 2.1 without requests feature."""
     capabilities: dict[str, Any] = {
         "api_version": "2.1.0",
-        "features": {"commercial": True},
+        "edition": "commercial",
+        "features": {},
     }
     assert requests_enabled(capabilities) is False
 
@@ -123,7 +126,8 @@ def test_requests_enabled_with_api_2_1_not_commercial() -> None:
     """Test requests_enabled returns False for API 2.1 without commercial edition."""
     capabilities: dict[str, Any] = {
         "api_version": "2.1.0",
-        "features": {"commercial": False, "requests": True},
+        "edition": "oss",
+        "features": {"requests": {"enabled": True}},
     }
     assert requests_enabled(capabilities) is False
 
@@ -144,14 +148,19 @@ def test_requests_enabled_with_api_1_x() -> None:
     """Test requests_enabled returns False for API 1.x."""
     capabilities: dict[str, Any] = {
         "api_version": "1.0.0",
-        "features": {"commercial": True, "requests": True},
+        "edition": "commercial",
+        "features": {"requests": {"enabled": True}},
     }
     assert requests_enabled(capabilities) is False
 
 
 def test_requests_enabled_with_legacy_profile() -> None:
     """Test requests_enabled returns False for legacy API."""
-    capabilities: dict[str, Any] = {"api_version": None, "features": {}}
+    capabilities: dict[str, Any] = {
+        "api_version": None,
+        "edition": "commercial",
+        "features": {},
+    }
     assert requests_enabled(capabilities) is False
 
 
@@ -167,7 +176,11 @@ def test_requests_enabled_with_empty_dict() -> None:
 
 def test_requests_enabled_with_invalid_version() -> None:
     """Test requests_enabled returns False for invalid version string."""
-    capabilities = {"api_version": "invalid", "features": {"requests": True}}
+    capabilities: dict[str, Any] = {
+        "api_version": "invalid",
+        "edition": "commercial",
+        "features": {"requests": {"enabled": True}},
+    }
     assert requests_enabled(capabilities) is False
 
 
@@ -175,7 +188,18 @@ def test_requests_enabled_with_api_2_2() -> None:
     """Test requests_enabled works with API 2.2+ with commercial edition."""
     capabilities: dict[str, Any] = {
         "api_version": "2.5.0",
-        "features": {"commercial": True, "requests": True},
+        "edition": "commercial",
+        "features": {"requests": {"enabled": True}},
+    }
+    assert requests_enabled(capabilities) is True
+
+
+def test_requests_enabled_with_boolean_fallback() -> None:
+    """Test requests_enabled handles boolean format for backward compatibility."""
+    capabilities: dict[str, Any] = {
+        "api_version": "2.1.0",
+        "edition": "commercial",
+        "features": {"requests": True},  # Boolean format fallback
     }
     assert requests_enabled(capabilities) is True
 

@@ -9,7 +9,11 @@ from rich import print as rprint
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from pwpush.api.capabilities import detect_api_capabilities, requests_enabled
+from pwpush.api.capabilities import (
+    detect_api_capabilities,
+    email_notifications_enabled,
+    requests_enabled,
+)
 from pwpush.api.endpoints import (
     adapt_request_payload_for_profile,
     adapt_request_uploads_for_profile,
@@ -196,8 +200,19 @@ def request_cmd(
     data["request"]["payload"] = request_content
 
     # Add notification email (required for requests)
-    if notify:
-        data["request"]["email"] = notify
+    # Check if email notifications are supported on this instance
+    if notify or notify_locale:
+        if email_notifications_enabled(capabilities):
+            if notify:
+                data["request"]["notify_emails_to"] = notify
+            if notify_locale:
+                data["request"]["notify_emails_to_locale"] = notify_locale
+        else:
+            if not _json_output():
+                rprint(
+                    "[yellow]Warning: Email notifications are not enabled on this instance. "
+                    "Options ignored.[/yellow]"
+                )
 
     # Add expiration options
     if days:
