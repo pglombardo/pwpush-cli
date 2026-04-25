@@ -188,7 +188,7 @@ def test_config_show_works_without_existing_file(monkeypatch, tmp_path):
     config_file = tmp_path / "config.ini"
     reset_config_file(monkeypatch, config_file)
 
-    result = runner.invoke(app, ["--json", "on", "config", "show"])
+    result = runner.invoke(app, ["--json", "config", "show"])
     config = json.loads(result.stdout.strip())
 
     assert result.exit_code == 0

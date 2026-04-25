@@ -68,7 +68,7 @@ def test_config_show():
 
 
 def test_config_show_in_json():
-    result = runner.invoke(app, ["--json", "on", "config", "show"])
+    result = runner.invoke(app, ["--json", "config", "show"])
     assert '{"instance": {"url":' in result.stdout
     assert result.exit_code == 0
 
@@ -84,7 +84,7 @@ def test_config_set():
     assert "Success" in result.stdout
     assert result.exit_code == 0
 
-    result = runner.invoke(app, ["--json", "on", "config", "show"])
+    result = runner.invoke(app, ["--json", "config", "show"])
     config = json.loads(result.stdout.strip())
     assert config["cli"]["json"] == "True"
     assert config["instance"]["url"] == "https://pwpush.test"
@@ -95,7 +95,7 @@ def test_config_unset():
     assert "Success" in result.stdout
     assert result.exit_code == 0
 
-    result = runner.invoke(app, ["--json", "on", "config", "show"])
+    result = runner.invoke(app, ["--json", "config", "show"])
     config = json.loads(result.stdout.strip())
     assert config["cli"]["json"] == "Not Set"
 
@@ -113,7 +113,7 @@ def test_config_set_positional_arguments():
     assert result.exit_code == 0
 
     # Verify the settings were applied
-    result = runner.invoke(app, ["--json", "on", "config", "show"])
+    result = runner.invoke(app, ["--json", "config", "show"])
     config = json.loads(result.stdout.strip())
     assert config["cli"]["json"] == "True"
     assert config["instance"]["url"] == "https://test-positional.com"
@@ -134,7 +134,7 @@ def test_config_set_flag_arguments():
     assert result.exit_code == 0
 
     # Verify the settings were applied
-    result = runner.invoke(app, ["--json", "on", "config", "show"])
+    result = runner.invoke(app, ["--json", "config", "show"])
     config = json.loads(result.stdout.strip())
     assert config["cli"]["json"] == "False"
     assert config["instance"]["url"] == "https://test-flags.com"
@@ -205,7 +205,7 @@ def test_config_set_expiration_settings():
     assert result.exit_code == 0
 
     # Verify all settings were applied
-    result = runner.invoke(app, ["--json", "on", "config", "show"])
+    result = runner.invoke(app, ["--json", "config", "show"])
     config = json.loads(result.stdout.strip())
     assert config["expiration"]["expire_after_days"] == "7"
     assert config["expiration"]["expire_after_views"] == "10"
