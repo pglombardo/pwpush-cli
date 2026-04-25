@@ -116,9 +116,13 @@ def logout_cmd() -> None:
     rprint(
         "This will log you out from this command line tool and remove local credentials."
     )
-    if confirmation := typer.prompt("Are you sure? [y/n]"):
+    confirmation = typer.prompt("Are you sure? [y/n]")
+    if confirmation.lower() in ("y", "yes"):
         user_config["instance"]["email"] = "Not Set"
         user_config["instance"]["token"] = "Not Set"
         user_config["instance"]["account_id"] = "Not Set"
         save_config()
         rprint("Log out successful.")
+    else:
+        rprint("Log out cancelled.")
+        raise typer.Exit(0)

@@ -71,7 +71,7 @@ def check_secret_conditions(
     lower: bool = True,
     length: int = 20,
 ) -> bool:
-    """check if a secret meets conditions"""
+    """Check if a secret meets conditions."""
     conditions: list[bool] = []
 
     if punctuation:
@@ -85,11 +85,7 @@ def check_secret_conditions(
     if length:
         conditions.append(len(secret) == length)
 
-    if all(conditions):
-        return True
-    else:
-        print(f"{secret} does not pass all conditions")
-        return False
+    return all(conditions)
 
 
 def generate_passphrase(length: int = 5) -> str:
@@ -125,11 +121,14 @@ def generate_secret(length: int = 50) -> str:
 
     Returns:
         str: A randomly generated secure password
+
+    Raises:
+        RuntimeError: If unable to generate a valid secret after maximum attempts.
     """
     characters = string.ascii_letters + string.digits + string.punctuation
-    attempts = 0
-    while True:
+    max_attempts = 1000
+    for _ in range(max_attempts):
         secret = "".join(secrets.choice(characters) for _ in range(length))
         if check_secret_conditions(secret, length=length):
             return secret
-        attempts += 1
+    raise RuntimeError(f"Failed to generate valid secret after {max_attempts} attempts")
