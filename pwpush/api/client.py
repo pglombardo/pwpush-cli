@@ -11,6 +11,16 @@ from pwpush import version as pwpush_version
 USER_AGENT = f"pwpush-cli/{pwpush_version}"
 
 
+def _sanitize_headers(headers: dict[str, str]) -> dict[str, str]:
+    """Return a copy of headers with sensitive authentication values masked."""
+    sanitized = headers.copy()
+    sensitive_keys = ["Authorization", "X-User-Token"]
+    for key in sensitive_keys:
+        if key in sanitized:
+            sanitized[key] = "***REDACTED***"
+    return sanitized
+
+
 def normalize_base_url(url: str) -> str:
     """Normalize an instance URL for safe path joining."""
     return url.rstrip("/")
@@ -54,8 +64,9 @@ def send_request(
     url = absolute_url(base_url, path)
 
     if debug:
+        safe_headers = _sanitize_headers(headers)
         rprint(f"Communicating with {normalize_base_url(base_url)} as user {email}")
-        rprint(f"Making {method} request to {url} with headers {headers}")
+        rprint(f"Making {method} request to {url} with headers {safe_headers}")
         if method == "POST":
             rprint(f"Request body: {post_data}")
             if upload_files is not None:
