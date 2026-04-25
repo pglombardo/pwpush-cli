@@ -345,6 +345,7 @@ def make_request(
     email=None,
     token=None,
     timeout=None,
+    on_rate_limit_retry=None,
 ):
     request_timeout = (
         timeout if timeout is not None else (5 if method == "DELETE" else 30)
@@ -370,6 +371,7 @@ def make_request(
         upload_files=upload_files,
         timeout=request_timeout,
         debug=debug_output(),
+        on_rate_limit_retry=on_rate_limit_retry,
     )
 
 
