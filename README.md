@@ -283,10 +283,10 @@ done
 
 | Key | Description | Valid Values |
 |-----|-------------|--------------|
-| `notify` | Default email addresses for notifications | Comma-separated emails |
-| `notify_locale` | Default locale for notification emails | `en`, `es`, `fr`, `de`, etc. |
+| `notify` | Notification email addresses stored in configuration | Comma-separated emails |
+| `notify_locale` | Notification email locale stored in configuration | `en`, `es`, `fr`, `de`, etc. |
 
-**Note:** These settings require a Password Pusher Pro instance with email notifications enabled.
+**Note:** These settings require a Password Pusher Pro instance with email notifications enabled. They are stored in your config file but are not currently applied automatically as defaults by the `push` or `push-file` commands.
 
 ## Examples
 

@@ -1,6 +1,7 @@
 from typing import Any
 
 import requests
+from rich import print as rprint
 
 from pwpush.api.client import absolute_url
 
@@ -84,12 +85,14 @@ def detect_api_capabilities(
             result["api_version"] = data.get("version")
             result["features"] = data.get("features", {})
             if debug:
-                print(f"[debug] API capabilities detected: {result}")
+                rprint(f"[dim][debug] API capabilities detected: {result}[/dim]")
         elif debug:
-            print(f"[debug] API capabilities check failed: {response.status_code}")
+            rprint(
+                f"[dim][debug] API capabilities check failed: {response.status_code}[/dim]"
+            )
     except requests.exceptions.RequestException as e:
         if debug:
-            print(f"[debug] API capabilities check error: {e}")
+            rprint(f"[dim][debug] API capabilities check error: {e}[/dim]")
 
     _capabilities_cache[cache_key] = result
     return result

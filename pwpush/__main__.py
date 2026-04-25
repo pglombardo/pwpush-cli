@@ -456,7 +456,7 @@ def push(
     notify_locale: str | None = typer.Option(
         None,
         "--notify-locale",
-        help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Default: 'en'. Requires --notify to be set.",
+        help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
     ),
 ) -> None:
     data: dict[str, dict[str, Any]] = {"password": {}}
@@ -668,7 +668,7 @@ def pushFile(
     notify_locale: str | None = typer.Option(
         None,
         "--notify-locale",
-        help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Default: 'en'. Requires --notify to be set.",
+        help="Locale for notification emails (e.g., 'en', 'es', 'fr', 'de'). Only used when --notify is set.",
     ),
     payload: str = typer.Argument(
         "",
