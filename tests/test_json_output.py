@@ -1,6 +1,7 @@
 """Tests for JSON output across all commands."""
 
 import json
+import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +11,12 @@ from pwpush.__main__ import app
 from pwpush.options import cli_options, default_config, json_output, user_config
 
 runner = CliRunner()
+
+
+def strip_ansi(text: str) -> str:
+    """Strip ANSI escape sequences from text."""
+    ansi_escape = re.compile(r"\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", text)
 
 
 @pytest.fixture(autouse=True)
@@ -165,37 +172,37 @@ class TestAllCommandsHaveJsonOption:
         """Test push command has --json option in help."""
         result = runner.invoke(app, ["push", "--help"])
         assert result.exit_code == 0
-        assert "--json" in result.stdout
+        assert "--json" in strip_ansi(result.stdout)
 
     def test_push_file_has_json_option(self):
         """Test push-file command has --json option in help."""
         result = runner.invoke(app, ["push-file", "--help"])
         assert result.exit_code == 0
-        assert "--json" in result.stdout
+        assert "--json" in strip_ansi(result.stdout)
 
     def test_list_has_json_option(self):
         """Test list command has --json option in help."""
         result = runner.invoke(app, ["list", "--help"])
         assert result.exit_code == 0
-        assert "--json" in result.stdout
+        assert "--json" in strip_ansi(result.stdout)
 
     def test_audit_has_json_option(self):
         """Test audit command has --json option in help."""
         result = runner.invoke(app, ["audit", "--help"])
         assert result.exit_code == 0
-        assert "--json" in result.stdout
+        assert "--json" in strip_ansi(result.stdout)
 
     def test_expire_has_json_option(self):
         """Test expire command has --json option in help."""
         result = runner.invoke(app, ["expire", "--help"])
         assert result.exit_code == 0
-        assert "--json" in result.stdout
+        assert "--json" in strip_ansi(result.stdout)
 
     def test_config_has_json_option(self):
         """Test config command has --json option in help."""
         result = runner.invoke(app, ["config", "--help"])
         assert result.exit_code == 0
-        assert "--json" in result.stdout
+        assert "--json" in strip_ansi(result.stdout)
 
 
 class TestPrettyJsonOutput:
