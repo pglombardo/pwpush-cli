@@ -128,6 +128,7 @@ def request_cmd(
     deletable: bool | None = None,
     retrieval_step: bool | None = None,
     note: str | None = None,
+    name: str | None = None,
     json: bool = False,
     verbose: bool = False,
     pretty: bool = False,
@@ -244,6 +245,9 @@ def request_cmd(
 
     if note:
         data["request"]["note"] = note
+
+    if name:
+        data["request"]["name"] = name
 
     # Callback to show rate limit retry feedback
     def on_rate_limit_retry(attempt: int, delay: float, response: Any) -> None:

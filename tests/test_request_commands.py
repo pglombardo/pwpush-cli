@@ -352,6 +352,33 @@ def test_request_with_note(mock_request_make_request, mock_request_enabled):
     assert post_data["request"]["note"] == "Ticket #12345"
 
 
+def test_request_with_name(mock_request_make_request, mock_request_enabled):
+    """Test creating a request with a name."""
+    # Set up auth token
+    user_config["instance"]["token"] = "valid-token"
+    user_config["instance"]["email"] = "user@example.com"
+
+    result = runner.invoke(
+        app,
+        [
+            "request",
+            "Send me the API key",
+            "--notify",
+            "admin@example.com",
+            "--name",
+            "API Key Request",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Request created successfully" in result.output
+
+    # Verify name was passed
+    post_call = _get_post_call(mock_request_make_request)
+    assert post_call is not None
+    post_data = _get_request_data_from_call(post_call)
+    assert post_data["request"]["name"] == "API Key Request"
+
+
 def test_request_json_output(mock_request_make_request, mock_request_enabled):
     """Test request command with JSON output."""
     # Set up auth token

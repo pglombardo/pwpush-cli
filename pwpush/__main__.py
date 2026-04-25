@@ -673,6 +673,10 @@ def request(
         None,
         help="Reference Note. Encrypted & Visible Only to You. E.g. Employee, Record or Ticket ID etc..",
     ),
+    name: str | None = typer.Option(
+        None,
+        help="A name for the request shown in the dashboard, notifications and emails.",
+    ),
     json: bool = typer.Option(
         False, "--json", "-j", help="Output results in JSON format."
     ),
@@ -697,6 +701,7 @@ def request(
         deletable=deletable,
         retrieval_step=retrieval_step,
         note=note,
+        name=name,
         json=json,
         verbose=verbose,
         pretty=pretty,

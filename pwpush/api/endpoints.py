@@ -229,6 +229,8 @@ def adapt_request_payload_for_profile(
         request_payload["expire_after_views"] = source["expire_after_views"]
     if "note" in source:
         request_payload["note"] = source["note"]
+    if "name" in source:
+        request_payload["name"] = source["name"]
     if "deletable_by_viewer" in source:
         request_payload["deletable_by_viewer"] = source["deletable_by_viewer"]
     if "retrieval_step" in source:
