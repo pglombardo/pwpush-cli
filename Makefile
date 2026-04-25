@@ -91,3 +91,30 @@ build-remove:
 
 .PHONY: clean-all
 clean-all: pycache-remove build-remove docker-remove
+
+#* Release automation
+# Usage: make release bump=patch (or minor/major)
+# This will: bump version, commit, tag, push, and publish
+.PHONY: release
+release:
+	@if [ -z "$(bump)" ]; then \
+		echo "Error: bump type required. Usage: make release bump=patch (or minor/major)"; \
+		exit 1; \
+	fi
+	@if ! echo "$(bump)" | grep -qE '^(patch|minor|major)$$'; then \
+		echo "Error: bump must be one of: patch, minor, major"; \
+		exit 1; \
+	fi
+	@echo "Releasing $(bump) version..."
+	poetry version $(bump)
+	$(eval NEW_VERSION := $(shell poetry version -s))
+	@echo "New version: $(NEW_VERSION)"
+	git add pyproject.toml
+	git commit -m "Bump version to $(NEW_VERSION)"
+	git tag -a "v$(NEW_VERSION)" -m "Version $(NEW_VERSION)"
+	git push oss HEAD
+	git push oss "v$(NEW_VERSION)"
+	@echo "Publishing GitHub release..."
+	gh release edit "v$(NEW_VERSION)" --draft=false
+	poetry publish --build
+	@echo "Released v$(NEW_VERSION) successfully!"
