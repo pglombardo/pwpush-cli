@@ -7,6 +7,7 @@ from rich.table import Table
 
 from pwpush.api.client import normalize_base_url
 from pwpush.options import save_config, user_config, user_config_file
+from pwpush.utils import parse_boolean
 
 NOT_SET = "Not Set"
 
@@ -84,15 +85,19 @@ def choose_instance_url() -> str:
     table.add_row("4", "Custom", "Self-hosted OSS or Pro instance")
     console.print(table)
 
-    # Determine default selection based on existing URL
+    # Determine default selection based on existing URL (normalized for comparison)
     default_choice = "1"
     if existing_url and existing_url != NOT_SET:
+        normalized_existing = normalize_base_url(existing_url)
         for index, choice in enumerate(HOSTED_INSTANCE_CHOICES, start=1):
-            if choice.url == existing_url:
+            if choice.url == normalized_existing:
                 default_choice = str(index)
                 break
         # If not a hosted choice, default to Custom (4)
-        if default_choice == "1" and existing_url != HOSTED_INSTANCE_CHOICES[0].url:
+        if (
+            default_choice == "1"
+            and normalized_existing != HOSTED_INSTANCE_CHOICES[0].url
+        ):
             default_choice = "4"
 
     while True:
@@ -133,7 +138,9 @@ def prompt_optional_int_with_default(
 ) -> str:
     """Prompt for an optional bounded integer config value with an existing default."""
     while True:
-        value = typer.prompt(prompt, default=existing_value, show_default=True).strip()
+        value = typer.prompt(
+            prompt, default=existing_value, show_default=bool(existing_value)
+        ).strip()
         if not value:
             return NOT_SET
 
@@ -158,20 +165,13 @@ def bool_config_value(prompt: str, *, default: bool = False) -> str:
     return str(typer.confirm(prompt, default=default))
 
 
-def parse_bool_config(value: str) -> bool:
-    """Parse a config string value as a boolean."""
-    if value.lower() in ("true", "yes", "1", "on"):
-        return True
-    return False
-
-
 def collect_wizard_settings() -> WizardSettings:
     """Collect all setup wizard settings without mutating global config."""
     url = choose_instance_url()
 
     # Get existing values for API token
     existing_token = user_config["instance"]["token"]
-    has_existing_token = existing_token != NOT_SET and existing_token.strip()
+    has_existing_token = existing_token != NOT_SET and bool(existing_token.strip())
 
     email = NOT_SET
     token = existing_token if has_existing_token else NOT_SET
@@ -250,7 +250,7 @@ def collect_wizard_settings() -> WizardSettings:
         retrieval_step = bool_config_value(
             "Enable retrieval step by default?",
             default=(
-                parse_bool_config(existing_retrieval)
+                parse_boolean(existing_retrieval)
                 if existing_retrieval != NOT_SET
                 else False
             ),
@@ -258,7 +258,7 @@ def collect_wizard_settings() -> WizardSettings:
         deletable_by_viewer = bool_config_value(
             "Allow viewers to delete pushes by default?",
             default=(
-                parse_bool_config(existing_deletable)
+                parse_boolean(existing_deletable)
                 if existing_deletable != NOT_SET
                 else False
             ),
@@ -276,22 +276,21 @@ def collect_wizard_settings() -> WizardSettings:
     debug = existing_debug if existing_debug != NOT_SET else NOT_SET
 
     has_existing_cli = any(
-        parse_bool_config(v)
+        v != NOT_SET
         for v in [existing_json, existing_verbose, existing_pretty, existing_debug]
-        if v != NOT_SET
     )
 
     if typer.confirm("Set CLI output preferences?", default=has_existing_cli):
         json = bool_config_value(
             "Output JSON by default?",
             default=(
-                parse_bool_config(existing_json) if existing_json != NOT_SET else False
+                parse_boolean(existing_json) if existing_json != NOT_SET else False
             ),
         )
         verbose = bool_config_value(
             "Enable verbose output by default?",
             default=(
-                parse_bool_config(existing_verbose)
+                parse_boolean(existing_verbose)
                 if existing_verbose != NOT_SET
                 else False
             ),
@@ -299,17 +298,13 @@ def collect_wizard_settings() -> WizardSettings:
         pretty = bool_config_value(
             "Pretty-print JSON by default?",
             default=(
-                parse_bool_config(existing_pretty)
-                if existing_pretty != NOT_SET
-                else False
+                parse_boolean(existing_pretty) if existing_pretty != NOT_SET else False
             ),
         )
         debug = bool_config_value(
             "Enable debug output by default?",
             default=(
-                parse_bool_config(existing_debug)
-                if existing_debug != NOT_SET
-                else False
+                parse_boolean(existing_debug) if existing_debug != NOT_SET else False
             ),
         )
 
