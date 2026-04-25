@@ -24,9 +24,14 @@ Self-destructing links for passwords, files, and sensitive data.
 
 ```bash
 # Share a password securely
-$ pwpush push --secret "my-password"
+$ pwpush push --secret "my-sensitive-payload"
 The secret has been pushed to:
-https://pwpush.com/p/abc123xyz
+https://us.pwpush.com/p/abc123xyz
+
+# Or pipe in content from a file or command
+$ cat secret.txt | pwpush push
+The secret has been pushed to:
+https://us.pwpush.com/p/xyz789abc
 ```
 
 ---
@@ -53,14 +58,14 @@ $ pwpush config wizard
 Password Pusher CLI Setup
 This wizard will create your local pwpush configuration.
 
-┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Option ┃ Instance            ┃ Description             ┃
-┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Option ┃ Instance              ┃ Description             ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
 │ 1      │ https://eu.pwpush.com │ EU hosted: Pro features │
 │ 2      │ https://us.pwpush.com │ US hosted: Pro features │
 │ 3      │ https://oss.pwpush.com│ OSS: EU Data Residency  │
-│ 4      │ Custom              │ Self-hosted instance    │
-└────────┴─────────────────────┴─────────────────────────┘
+│ 4      │ Custom                │ Self-hosted instance    │
+└────────┴───────────────────────┴─────────────────────────┘
 ```
 
 ### 2. Push Your First Secret
