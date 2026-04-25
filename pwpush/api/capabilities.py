@@ -170,8 +170,8 @@ def request_email_notifications_enabled(
         return False
 
     features = capabilities.get("features", {})
-    requests = features.get("requests", {})
-    return bool(requests.get("email_auto_dispatch", False))
+    request_features = features.get("requests", {})
+    return bool(request_features.get("email_auto_dispatch", False))
 
 
 def accounts_enabled(capabilities: dict[str, Any] | None = None) -> bool:
