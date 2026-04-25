@@ -6,6 +6,10 @@ import requests
 import typer
 from rich import print as rprint
 
+from pwpush import version as pwpush_version
+
+USER_AGENT = f"pwpush-cli/{pwpush_version}"
+
 
 def normalize_base_url(url: str) -> str:
     """Normalize an instance URL for safe path joining."""
@@ -46,11 +50,12 @@ def send_request(
 ) -> requests.Response:
     """Send one HTTP request to the configured instance."""
     auth_headers = build_auth_headers(email, token)
+    headers = {**auth_headers, "User-Agent": USER_AGENT}
     url = absolute_url(base_url, path)
 
     if debug:
         rprint(f"Communicating with {normalize_base_url(base_url)} as user {email}")
-        rprint(f"Making {method} request to {url} with headers {auth_headers}")
+        rprint(f"Making {method} request to {url} with headers {headers}")
         if method == "POST":
             rprint(f"Request body: {post_data}")
             if upload_files is not None:
@@ -58,17 +63,17 @@ def send_request(
 
     try:
         if method == "GET":
-            return requests.get(url, headers=auth_headers, timeout=timeout)
+            return requests.get(url, headers=headers, timeout=timeout)
         if method == "POST":
             return requests.post(
                 url,
-                headers=auth_headers,
+                headers=headers,
                 json=post_data,
                 timeout=timeout,
                 files=upload_files,
             )
         if method == "DELETE":
-            return requests.delete(url, headers=auth_headers, timeout=timeout)
+            return requests.delete(url, headers=headers, timeout=timeout)
     except requests.exceptions.Timeout:
         rprint(
             "[red]Error: Request timed out. Please check your connection and try again.[/red]"
