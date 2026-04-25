@@ -11,7 +11,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from pwpush.api.capabilities import (
     detect_api_capabilities,
-    email_notifications_enabled,
+    request_email_notifications_enabled,
     requests_enabled,
 )
 from pwpush.api.endpoints import (
@@ -202,7 +202,7 @@ def request_cmd(
     # Add notification email (required for requests)
     # Check if email notifications are supported on this instance
     if notify or notify_locale:
-        if email_notifications_enabled(capabilities):
+        if request_email_notifications_enabled(capabilities):
             if notify:
                 data["request"]["notify_emails_to"] = notify
             if notify_locale:

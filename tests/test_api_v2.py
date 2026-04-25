@@ -108,28 +108,37 @@ class TestEmailNotificationsEnabled:
         """Test version parsing with various edge cases."""
         # Version with only major.minor (no patch)
         assert email_notifications_enabled(
-            {"api_version": "2.1", "features": {"email_auto_dispatch": True}}
+            {
+                "api_version": "2.1",
+                "features": {"pushes": {"email_auto_dispatch": True}},
+            }
         )
 
         # Version with extra parts
         assert email_notifications_enabled(
-            {"api_version": "2.1.0.1", "features": {"email_auto_dispatch": True}}
+            {
+                "api_version": "2.1.0.1",
+                "features": {"pushes": {"email_auto_dispatch": True}},
+            }
         )
 
         # Invalid version string
         assert not email_notifications_enabled(
-            {"api_version": "not-a-version", "features": {"email_auto_dispatch": True}}
+            {
+                "api_version": "not-a-version",
+                "features": {"pushes": {"email_auto_dispatch": True}},
+            }
         )
 
         # Empty version
         assert not email_notifications_enabled(
-            {"api_version": "", "features": {"email_auto_dispatch": True}}
+            {"api_version": "", "features": {"pushes": {"email_auto_dispatch": True}}}
         )
 
     def test_missing_api_version(self):
         """Test when api_version is missing."""
         assert not email_notifications_enabled(
-            {"features": {"email_auto_dispatch": True}}
+            {"features": {"pushes": {"email_auto_dispatch": True}}}
         )
 
     def test_missing_features(self):

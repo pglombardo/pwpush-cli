@@ -318,10 +318,10 @@ def test_push_with_notify_locale_unauthenticated(monkeypatch):
 
 def test_push_with_notify_when_enabled(mock_make_request, monkeypatch):
     """Test push with notification when feature is enabled."""
-    # Mock capabilities with feature enabled
+    # Mock capabilities with feature enabled - pushes.email_auto_dispatch
     mock_capabilities = {
         "api_version": "2.1.0",
-        "features": {"email_auto_dispatch": True},
+        "features": {"pushes": {"email_auto_dispatch": True}},
     }
     monkeypatch.setattr(
         "pwpush.commands.push.detect_api_capabilities",
@@ -346,10 +346,10 @@ def test_push_with_notify_when_enabled(mock_make_request, monkeypatch):
 
 def test_push_with_notify_when_disabled(mock_make_request, monkeypatch):
     """Test push with notification shows warning when feature is disabled."""
-    # Mock capabilities with feature disabled
+    # Mock capabilities with feature disabled - pushes.email_auto_dispatch
     mock_capabilities = {
         "api_version": "2.1.0",
-        "features": {"email_auto_dispatch": False},
+        "features": {"pushes": {"email_auto_dispatch": False}},
     }
     monkeypatch.setattr(
         "pwpush.commands.push.detect_api_capabilities",
@@ -376,7 +376,7 @@ def test_push_with_notify_locale(mock_make_request, monkeypatch):
     """Test push with notification locale."""
     mock_capabilities = {
         "api_version": "2.1.0",
-        "features": {"email_auto_dispatch": True},
+        "features": {"pushes": {"email_auto_dispatch": True}},
     }
     monkeypatch.setattr(
         "pwpush.commands.push.detect_api_capabilities",
@@ -412,22 +412,27 @@ def test_email_notifications_enabled_helper():
     """Test the email_notifications_enabled helper function."""
     from pwpush.api.capabilities import email_notifications_enabled
 
-    # Enabled
+    # Enabled - pushes.email_auto_dispatch
     assert email_notifications_enabled(
-        {"api_version": "2.1.0", "features": {"email_auto_dispatch": True}}
+        {"api_version": "2.1.0", "features": {"pushes": {"email_auto_dispatch": True}}}
     )
 
     # Disabled - feature flag false
     assert not email_notifications_enabled(
-        {"api_version": "2.1.0", "features": {"email_auto_dispatch": False}}
+        {"api_version": "2.1.0", "features": {"pushes": {"email_auto_dispatch": False}}}
     )
 
-    # Disabled - missing feature flag
+    # Disabled - missing pushes section
     assert not email_notifications_enabled({"api_version": "2.1.0", "features": {}})
+
+    # Disabled - missing email_auto_dispatch in pushes
+    assert not email_notifications_enabled(
+        {"api_version": "2.1.0", "features": {"pushes": {}}}
+    )
 
     # Disabled - old API version
     assert not email_notifications_enabled(
-        {"api_version": "2.0.0", "features": {"email_auto_dispatch": True}}
+        {"api_version": "2.0.0", "features": {"pushes": {"email_auto_dispatch": True}}}
     )
 
     # Disabled - None

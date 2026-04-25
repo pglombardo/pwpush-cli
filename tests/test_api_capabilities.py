@@ -204,6 +204,56 @@ def test_requests_enabled_with_boolean_fallback() -> None:
     assert requests_enabled(capabilities) is True
 
 
+# Tests for request_email_notifications_enabled function
+
+
+def test_request_email_notifications_enabled_true() -> None:
+    """Test request_email_notifications_enabled returns True when enabled."""
+    from pwpush.api.capabilities import request_email_notifications_enabled
+
+    capabilities: dict[str, Any] = {
+        "api_version": "2.1.0",
+        "edition": "commercial",
+        "features": {"requests": {"enabled": True, "email_auto_dispatch": True}},
+    }
+    assert request_email_notifications_enabled(capabilities) is True
+
+
+def test_request_email_notifications_enabled_false() -> None:
+    """Test request_email_notifications_enabled returns False when disabled."""
+    from pwpush.api.capabilities import request_email_notifications_enabled
+
+    capabilities: dict[str, Any] = {
+        "api_version": "2.1.0",
+        "edition": "commercial",
+        "features": {"requests": {"enabled": True, "email_auto_dispatch": False}},
+    }
+    assert request_email_notifications_enabled(capabilities) is False
+
+
+def test_request_email_notifications_enabled_missing() -> None:
+    """Test request_email_notifications_enabled returns False when missing."""
+    from pwpush.api.capabilities import request_email_notifications_enabled
+
+    capabilities: dict[str, Any] = {
+        "api_version": "2.1.0",
+        "edition": "commercial",
+        "features": {"requests": {"enabled": True}},
+    }
+    assert request_email_notifications_enabled(capabilities) is False
+
+
+def test_request_email_notifications_enabled_old_api() -> None:
+    """Test request_email_notifications_enabled returns False for old API."""
+    from pwpush.api.capabilities import request_email_notifications_enabled
+
+    capabilities: dict[str, Any] = {
+        "api_version": "2.0.0",
+        "features": {"requests": {"email_auto_dispatch": True}},
+    }
+    assert request_email_notifications_enabled(capabilities) is False
+
+
 # Tests for detect_api_capabilities
 
 

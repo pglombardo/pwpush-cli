@@ -23,7 +23,7 @@ def mock_request_enabled():
             return_value=True,
         ),
         patch(
-            "pwpush.commands.request.email_notifications_enabled",
+            "pwpush.commands.request.request_email_notifications_enabled",
             return_value=True,
         ),
     ):
