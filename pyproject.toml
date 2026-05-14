@@ -71,7 +71,7 @@ virtualenv = ">=21.3.2"
 setuptools = ">=78.1.1"
 cryptography = ">=48.0.0"
 regex = ">=2026.5.9"
-types-requests = "^2.33.0.20260508"
+types-requests = "^2.33.0.20260513"
 types-python-dateutil = "^2.9.0.20260508"
 
 [tool.black]
