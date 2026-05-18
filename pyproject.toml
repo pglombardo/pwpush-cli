@@ -52,7 +52,7 @@ python = ">=3.10,<4.0"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.10"
-black = {version = ">=22.6.0", allow-prereleases = true}
+black = {version = ">=26.5.0", allow-prereleases = true}
 darglint = "^1.8.0"
 filelock = ">=3.29.0"
 isort = {extras = ["colors"], version = "^8.0.1"}
