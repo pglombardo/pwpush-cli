@@ -625,14 +625,14 @@ profile = ["gprof2dot (>=2022.7.29)"]
 
 [[package]]
 name = "distlib"
-version = "0.4.2"
+version = "0.4.3"
 description = "Distribution utilities"
 optional = false
 python-versions = "*"
 groups = ["dev"]
 files = [
-    {file = "distlib-0.4.2-py2.py3-none-any.whl", hash = "sha256:ca4cb11e5d746b5ec13c199cbf19ae27a241f89702b54e153a74332955446067"},
-    {file = "distlib-0.4.2.tar.gz", hash = "sha256:baeb401c90f27acd15c4861ae0847d1e731c27ac3dbf4210643ba61fa1e813db"},
+    {file = "distlib-0.4.3-py2.py3-none-any.whl", hash = "sha256:4b0ce306c966eb73bc3a7b6abad017c556dadd92c44701562cd528ac7fde4d5b"},
+    {file = "distlib-0.4.3.tar.gz", hash = "sha256:f152097224a0ae24be5a0f6bae1b9359af82133bce63f98a95f86cae1aede9ed"},
 ]
 
 [[package]]
