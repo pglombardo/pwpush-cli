@@ -669,14 +669,14 @@ tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipyth
 
 [[package]]
 name = "filelock"
-version = "3.29.4"
+version = "3.29.5"
 description = "A platform independent file lock."
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "filelock-3.29.4-py3-none-any.whl", hash = "sha256:dac1648087d5115554850d113e7dd8c83ab2d38e3435dde2d4f163847e57b767"},
-    {file = "filelock-3.29.4.tar.gz", hash = "sha256:10cdb3656fc44541cdf30652a93fb10ec6b05325620eb316bd26893e4201538a"},
+    {file = "filelock-3.29.5-py3-none-any.whl", hash = "sha256:8af830889ba3a0ffcefbd6c7d2af8a54012058103771f2e10848222f476a1693"},
+    {file = "filelock-3.29.5.tar.gz", hash = "sha256:6e6034c57a00a020e767f2614a5539863f056de7e7991d6d1473aef7ff73f156"},
 ]
 
 [[package]]
@@ -821,6 +821,7 @@ description = "Mypyc runtime library"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
+markers = "platform_python_implementation != \"PyPy\""
 files = [
     {file = "librt-0.12.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:fe3547407bbce45c09885591f90168325c5a31a6795b9a13f6b9ff3d25093d93"},
     {file = "librt-0.12.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:5925eca673207204a3adca040a91bdd3738fc7ba48da647ccd55732692a35736"},
@@ -2233,4 +2234,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "7ccf26f0c2b0425a1a368de562109bfbc6f9b7c0bd715a4409308c976cfc2c25"
+content-hash = "b71e35d34b0604815b932f5e839a8174ab2e219cb6385bc89df721aa6f4c4b40"
