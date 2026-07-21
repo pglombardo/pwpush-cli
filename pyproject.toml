@@ -54,7 +54,7 @@ python = ">=3.10,<4.0"
 bandit = "^1.7.10"
 black = {version = ">=26.5.1", allow-prereleases = true}
 darglint = "^1.8.0"
-filelock = ">=3.31.1"
+filelock = ">=3.31.2"
 isort = {extras = ["colors"], version = "^8.0.1"}
 mypy = "^2.3"
 mypy-extensions = "^1.1.0"
