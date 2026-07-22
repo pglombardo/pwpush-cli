@@ -58,7 +58,7 @@ filelock = ">=3.31.1"
 isort = {extras = ["colors"], version = "^8.0.1"}
 mypy = "^2.3"
 mypy-extensions = "^1.1.0"
-pre-commit = "^4.6.0"
+pre-commit = "^4.6.1"
 pydocstyle = "^6.1.1"
 pylint = "^4.0.6"
 pytest = "^9.1.1"
