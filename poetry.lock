@@ -685,14 +685,14 @@ tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipyth
 
 [[package]]
 name = "filelock"
-version = "3.32.0"
+version = "3.32.2"
 description = "A platform independent file lock."
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "filelock-3.32.0-py3-none-any.whl", hash = "sha256:d396bea984af47333ef05e50eae7eff88c84256de6112aea0ec48a233c064fe3"},
-    {file = "filelock-3.32.0.tar.gz", hash = "sha256:7be2ad23a14607ccc71808e68fe30848aeace7058ace17852f68e2a68e310402"},
+    {file = "filelock-3.32.2-py3-none-any.whl", hash = "sha256:87dd94cf281e586d135fa51132b8e3d9a598b316e90377a288663c9321036c82"},
+    {file = "filelock-3.32.2.tar.gz", hash = "sha256:c33351e1f49cae33414acbc6d56784e6ecee82514ec90795da1161fc4836b5b8"},
 ]
 
 [[package]]
@@ -2247,4 +2247,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "ffb579ba8969817ac853a53c90d8ff1f5fa6218d9b5c3f2b158b4d30efc64500"
+content-hash = "e90f1a4a696537b9e3baa5fa4f6d6c384b72dd1184f036b5128337cc61235ded"
