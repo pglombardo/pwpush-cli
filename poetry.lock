@@ -824,6 +824,7 @@ description = "Mypyc runtime library"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
+markers = "platform_python_implementation != \"PyPy\""
 files = [
     {file = "librt-0.14.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:7dd8270544defd2a25e57f4bf2ad94ff62a74addf7e82a479eea4ce9c5687516"},
     {file = "librt-0.14.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:36044fb53cc1aa274a69406b67c7c8d90511fdf01389a6cf6d04f7b9bc57f067"},
@@ -1931,14 +1932,14 @@ jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
 name = "setuptools"
-version = "83.0.0"
+version = "84.0.0"
 description = "Most extensible Python build backend with support for C/C++ extension modules"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "setuptools-83.0.0-py3-none-any.whl", hash = "sha256:29b23c360f22f414dc7336bb39178cc7bcbf6021ed2733cde173f09dba19abb3"},
-    {file = "setuptools-83.0.0.tar.gz", hash = "sha256:025bccbbf0fa05b6192bc64ae1e7b16e001fd6d6d4d5de03c97b1c1ade523bef"},
+    {file = "setuptools-84.0.0-py3-none-any.whl", hash = "sha256:51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670"},
+    {file = "setuptools-84.0.0.tar.gz", hash = "sha256:f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73"},
 ]
 
 [package.extras]
@@ -2273,4 +2274,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "e42a06bfe0196e538878dd95d98e586fa6bc66a92abf1fbb7e85c8f8cfcf61c4"
+content-hash = "7ffa3c9e7195101979d2086f61fc4b1811103b2bf19d02fdcb256a1685bce2e9"
