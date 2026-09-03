@@ -70,7 +70,7 @@ urllib3 = ">=2.7.0"
 virtualenv = ">=21.7.7"
 setuptools = ">=84.0.0"
 cryptography = ">=49.0.0"
-regex = ">=2026.7.19"
+regex = ">=2026.8.31"
 types-requests = "^2.33.0.20260712"
 types-python-dateutil = "^2.9.0.20260807"
 
