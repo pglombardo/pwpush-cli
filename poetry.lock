@@ -2438,14 +2438,14 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 
 [[package]]
 name = "virtualenv"
-version = "21.14.10"
+version = "21.14.11"
 description = "Virtual Python Environment builder"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "virtualenv-21.14.10-py3-none-any.whl", hash = "sha256:bf4a0f9671731d097e017e41280aa05e1e1adcd536b0e804fceb3179947ad50e"},
-    {file = "virtualenv-21.14.10.tar.gz", hash = "sha256:f733501a49404c91b5bb1d34d107073b8f4b93a9a1ddb7e9a950eb8ce60f38ad"},
+    {file = "virtualenv-21.14.11-py3-none-any.whl", hash = "sha256:b319f8590a84e5de5f8f2c803ecd2237e9bc0ffa7c1e875e3169c107cecb7454"},
+    {file = "virtualenv-21.14.11.tar.gz", hash = "sha256:593052d8477ea8c55a842387ce111bd08c72618f0c1133c302cafe335e570a57"},
 ]
 
 [package.dependencies]
@@ -2509,4 +2509,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "06b4eac4f6386709177bb62ec53baf22f5406d4d5fa5f51763923f16ac58c222"
+content-hash = "df1cdc11af979864d51897c974e12c1d0be9bdeb9361e0ada736ac132ba9bb46"
