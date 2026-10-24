@@ -790,7 +790,7 @@ def test_expire_without_token_shows_help() -> None:
         assert result.exit_code == 0
         assert "Usage:" in result.stdout
         assert "Expire a push." in result.stdout
-        assert "URL_TOKEN" in result.stdout
+        assert "url_token" in result.stdout
         mock_request.assert_not_called()
 
 
@@ -835,7 +835,7 @@ def test_audit_without_token_shows_help() -> None:
         assert "Usage:" in result.stdout
         assert "Show the audit log for the given push." in result.stdout
         assert "Requires login with an API token." in result.stdout
-        assert "URL_TOKEN" in result.stdout
+        assert "url_token" in result.stdout
         mock_request.assert_not_called()
 
 
