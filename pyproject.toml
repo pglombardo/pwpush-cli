@@ -71,7 +71,7 @@ setuptools = ">=84.2.1"
 cryptography = ">=50.0.2"
 regex = ">=2026.9.29"
 types-requests = "^2.33.0.20261006"
-types-python-dateutil = "^2.9.0.20261021"
+types-python-dateutil = "^2.9.0.20261029"
 
 [tool.black]
 # https://github.com/psf/black
