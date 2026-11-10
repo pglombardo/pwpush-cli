@@ -1847,14 +1847,14 @@ six = ">=1.5"
 
 [[package]]
 name = "python-discovery"
-version = "1.9.4"
+version = "1.9.5"
 description = "Python interpreter discovery"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "python_discovery-1.9.4-py3-none-any.whl", hash = "sha256:b468f365040b40f4cb39918b0766d3e5a2f340968e07df752fbc96f1bb4641ab"},
-    {file = "python_discovery-1.9.4.tar.gz", hash = "sha256:c01b45fe515c1d268b57c57d554bb0e1d320b8e9eb5490bb2f4f577be26e4380"},
+    {file = "python_discovery-1.9.5-py3-none-any.whl", hash = "sha256:a1fae8fca11e4bc61e38491c2aafff29e430b3c5e272d51ae52fb895bc4c0fac"},
+    {file = "python_discovery-1.9.5.tar.gz", hash = "sha256:86279f5d2728bc067de28b7ddc571be2eacc2ae0e7048f8629d2481a0f8848a2"},
 ]
 
 [package.dependencies]
