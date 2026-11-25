@@ -686,14 +686,14 @@ files = [
 
 [[package]]
 name = "decorator"
-version = "5.3.1"
+version = "5.3.2"
 description = "Decorators for Humans"
 optional = false
 python-versions = ">=3.8"
 groups = ["dev"]
 files = [
-    {file = "decorator-5.3.1-py3-none-any.whl", hash = "sha256:f47fe6fdbd2edd623ecfe36875d37aba411624e2670dd395dddae1358689bb3c"},
-    {file = "decorator-5.3.1.tar.gz", hash = "sha256:4cbcdd55a6efadb9dbea26b858f4fb3264567b52d69ca0d25b721b553f60ea82"},
+    {file = "decorator-5.3.2-py3-none-any.whl", hash = "sha256:d3fb2a434ac31e231d14175ecbda823d83f26b7e45270cd7cd4d0350264b79e2"},
+    {file = "decorator-5.3.2.tar.gz", hash = "sha256:d9883f1b8259e3bfc42565d0bc6fdc760012008552aa449f75efd2d48319b82b"},
 ]
 
 [[package]]
