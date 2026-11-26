@@ -204,13 +204,29 @@ class TestChooseInstanceUrl:
             result = choose_instance_url()
             assert result == "https://eu.pwpush.com"
 
+    def test_select_us_hosted_instance(self, monkeypatch):
+        """Test selecting the US hosted instance."""
+        monkeypatch.setitem(user_config["instance"], "url", NOT_SET)
+
+        with patch("pwpush.config_wizard.typer.prompt", return_value="2"):
+            result = choose_instance_url()
+            assert result == "https://us.pwpush.com"
+
+    def test_select_au_hosted_instance(self, monkeypatch):
+        """Test selecting the AU hosted instance."""
+        monkeypatch.setitem(user_config["instance"], "url", NOT_SET)
+
+        with patch("pwpush.config_wizard.typer.prompt", return_value="3"):
+            result = choose_instance_url()
+            assert result == "https://au.pwpush.com"
+
     def test_select_custom_instance(self, monkeypatch):
         """Test selecting custom instance option."""
         monkeypatch.setitem(user_config["instance"], "url", NOT_SET)
 
         with patch(
             "pwpush.config_wizard.typer.prompt",
-            side_effect=["4", "https://custom.example.com"],
+            side_effect=["5", "https://custom.example.com"],
         ):
             result = choose_instance_url()
             assert result == "https://custom.example.com"

@@ -108,7 +108,7 @@ pwpush/
 - **Reference Notes**: Encrypted notes visible only to creator
 
 ## API Integration
-- Support multiple Password Pusher instances (eu.pwpush.com, us.pwpush.com, self-hosted)
+- Support multiple Password Pusher instances (eu.pwpush.com, us.pwpush.com, au.pwpush.com, self-hosted)
 - Handle authentication via email/token pairs
 - Support both password and file push endpoints
 - Implement proper error handling for API responses
