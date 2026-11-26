@@ -6,6 +6,7 @@ from typer.testing import CliRunner
 
 from pwpush.__main__ import app
 from pwpush.config_wizard import (
+    HOSTED_INSTANCE_CHOICES,
     WizardSettings,
     apply_wizard_settings,
     normalize_instance_url,
@@ -21,6 +22,16 @@ def reset_config_file(monkeypatch, config_file):
     monkeypatch.setattr("pwpush.config_wizard.user_config_file", config_file)
     user_config.clear()
     user_config.read_dict(default_config)
+
+
+def test_hosted_instance_choices_include_au_next_to_eu_and_us():
+    urls = [choice.url for choice in HOSTED_INSTANCE_CHOICES]
+    assert urls[:3] == [
+        "https://eu.pwpush.com",
+        "https://us.pwpush.com",
+        "https://au.pwpush.com",
+    ]
+    assert "https://oss.pwpush.com" in urls
 
 
 def test_normalize_instance_url_defaults_bare_domains_to_https():
@@ -76,11 +87,28 @@ def test_config_wizard_saves_us_instance_and_skipped_preferences(monkeypatch, tm
     assert user_config["expiration"]["deletable_by_viewer"] == "Not Set"
 
 
-def test_config_wizard_saves_oss_instance(monkeypatch, tmp_path):
+def test_config_wizard_saves_au_instance_and_skipped_preferences(monkeypatch, tmp_path):
     config_file = tmp_path / "config.ini"
     reset_config_file(monkeypatch, config_file)
 
     result = runner.invoke(app, ["config", "wizard"], input="3\nn\nn\nn\n")
+
+    assert result.exit_code == 0
+    assert config_file.exists()
+    assert user_config["instance"]["url"] == "https://au.pwpush.com"
+    assert user_config["instance"]["email"] == "Not Set"
+    assert user_config["instance"]["token"] == "Not Set"
+    assert user_config["expiration"]["expire_after_days"] == "Not Set"
+    assert user_config["expiration"]["expire_after_views"] == "Not Set"
+    assert user_config["expiration"]["retrieval_step"] == "Not Set"
+    assert user_config["expiration"]["deletable_by_viewer"] == "Not Set"
+
+
+def test_config_wizard_saves_oss_instance(monkeypatch, tmp_path):
+    config_file = tmp_path / "config.ini"
+    reset_config_file(monkeypatch, config_file)
+
+    result = runner.invoke(app, ["config", "wizard"], input="4\nn\nn\nn\n")
 
     assert result.exit_code == 0
     assert user_config["instance"]["url"] == "https://oss.pwpush.com"
@@ -94,7 +122,7 @@ def test_config_wizard_saves_custom_instance_and_preferences(monkeypatch, tmp_pa
         app,
         ["config", "wizard"],
         input=(
-            "4\n"
+            "5\n"
             "pwpush.example.com/\n"
             "y\n"
             "token-value\n"

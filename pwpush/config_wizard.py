@@ -168,6 +168,11 @@ HOSTED_INSTANCE_CHOICES: tuple[InstanceChoice, ...] = (
         description="Pro features; US Data Residency",
     ),
     InstanceChoice(
+        label="AU hosted",
+        url="https://au.pwpush.com",
+        description="Pro features; AU Data Residency",
+    ),
+    InstanceChoice(
         label="OSS hosted",
         url="https://oss.pwpush.com",
         description="OSS; EU Data Residency; No File Uploads",
@@ -196,37 +201,42 @@ def normalize_instance_url(url: str) -> str:
 def choose_instance_url() -> str:
     """Prompt for the Password Pusher instance URL."""
     existing_url = user_config["instance"]["url"]
+    custom_option = str(len(HOSTED_INSTANCE_CHOICES) + 1)
+    hosted_options = {
+        str(index) for index in range(1, len(HOSTED_INSTANCE_CHOICES) + 1)
+    }
 
     table = Table("Option", "Instance", "Description")
     for index, choice in enumerate(HOSTED_INSTANCE_CHOICES, start=1):
         table.add_row(str(index), choice.url, f"{choice.label}: {choice.description}")
-    table.add_row("4", "Custom", "Self-hosted OSS or Pro instance")
+    table.add_row(custom_option, "Custom", "Self-hosted OSS or Pro instance")
     console.print(table)
 
     # Determine default selection based on existing URL (normalized for comparison)
     default_choice = "1"
     if existing_url and existing_url != NOT_SET:
         normalized_existing = normalize_base_url(existing_url)
+        matched_hosted = False
         for index, choice in enumerate(HOSTED_INSTANCE_CHOICES, start=1):
             if choice.url == normalized_existing:
                 default_choice = str(index)
+                matched_hosted = True
                 break
-        # If not a hosted choice, default to Custom (4)
-        if (
-            default_choice == "1"
-            and normalized_existing != HOSTED_INSTANCE_CHOICES[0].url
-        ):
-            default_choice = "4"
+        if not matched_hosted:
+            default_choice = custom_option
 
     while True:
         selection = typer.prompt("Choose an instance", default=default_choice).strip()
-        if selection in ("1", "2", "3"):
+        if selection in hosted_options:
             return HOSTED_INSTANCE_CHOICES[int(selection) - 1].url
-        if selection == "4":
+        if selection == custom_option:
             return prompt_custom_instance_url(
                 existing_url if existing_url != NOT_SET else None
             )
-        console.print("[red]Please choose 1, 2, 3, or 4.[/red]")
+        hosted_list = ", ".join(
+            str(i) for i in range(1, len(HOSTED_INSTANCE_CHOICES) + 1)
+        )
+        console.print(f"[red]Please choose {hosted_list}, or {custom_option}.[/red]")
 
 
 def prompt_custom_instance_url(existing_url: str | None = None) -> str:

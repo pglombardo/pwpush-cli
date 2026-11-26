@@ -63,8 +63,9 @@ This wizard will create your local pwpush configuration.
 ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
 │ 1      │ https://eu.pwpush.com │ EU hosted: Pro features │
 │ 2      │ https://us.pwpush.com │ US hosted: Pro features │
-│ 3      │ https://oss.pwpush.com│ OSS: EU Data Residency  │
-│ 4      │ Custom                │ Self-hosted instance    │
+│ 3      │ https://au.pwpush.com │ AU hosted: Pro features │
+│ 4      │ https://oss.pwpush.com│ OSS: EU Data Residency  │
+│ 5      │ Custom                │ Self-hosted instance    │
 └────────┴───────────────────────┴─────────────────────────┘
 ```
 
@@ -129,6 +130,7 @@ https://pwpush.com/r/def456uvw
 Works with hosted services or your own instance:
 - `eu.pwpush.com` — EU-hosted Pro
 - `us.pwpush.com` — US-hosted Pro
+- `au.pwpush.com` — AU-hosted Pro
 - `oss.pwpush.com` — Free OSS tier
 - Self-hosted — Your own domain
 
